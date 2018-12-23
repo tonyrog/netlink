@@ -187,9 +187,6 @@ static int        nl_drv_init(void);
 static void       nl_drv_finish(void);
 static void       nl_drv_stop(ErlDrvData);
 static void       nl_drv_output(ErlDrvData,char*,ErlDrvSizeT);
-#if 0
-static void       nl_drv_outputv(ErlDrvData, ErlIOVec*);
-#endif
 static void       nl_drv_ready_input(ErlDrvData, ErlDrvEvent);
 static void       nl_drv_ready_output(ErlDrvData data, ErlDrvEvent event);
 static ErlDrvData nl_drv_start(ErlDrvPort, char* command);
@@ -699,6 +696,7 @@ DRIVER_INIT(nl_drv)
 {
     ErlDrvEntry* ptr = &nl_drv_entry;
 
+    memset(ptr, 0, sizeof(ErlDrvEntry));
     ptr->driver_name = "netlink_drv";
     ptr->init  = nl_drv_init;
     ptr->start = nl_drv_start;
@@ -709,18 +707,10 @@ DRIVER_INIT(nl_drv)
     ptr->finish = nl_drv_finish;
     ptr->control = nl_drv_ctl;
     ptr->timeout = nl_drv_timeout;
-#if 0
-    ptr->outputv = nl_drv_outputv;
-#endif
-    ptr->ready_async = 0;
-    ptr->flush = 0;
-    ptr->call = 0;
-    ptr->event = 0;
     ptr->extended_marker = ERL_DRV_EXTENDED_MARKER;
     ptr->major_version = ERL_DRV_EXTENDED_MAJOR_VERSION;
     ptr->minor_version = ERL_DRV_EXTENDED_MINOR_VERSION;
     ptr->driver_flags = ERL_DRV_FLAG_USE_PORT_LOCKING;
-    ptr->process_exit = 0;
     ptr->stop_select = nl_drv_stop_select;
 
     return (ErlDrvEntry*) ptr;
