@@ -384,7 +384,7 @@
   multicast,
   portsel,
   automedia,
-  ynamic,
+  dynamic,
   lower_up,
   dormant,
   echo
@@ -766,8 +766,8 @@
   {baseaddr,  uint64_t},
   {irq,       uint16_t},
   {dma,       uint8_t},
-  {port,      uint8_t}
-  %% fixme: 64 padding? on 64 bit machine?
+  {port,      uint8_t},
+  {'_',       uint32_t}  %% fixme pad 0/32 depending on machine
  ]}.
 
 {attribute, rtnetlink_route, 
@@ -842,19 +842,40 @@
   {operstate,   {enum,uint8_t,rtnetlink_link_operstate}},
   {linkmode,    {enum,uint8_t,rtnetlink_link_linkmode}},
   {linkinfo,    {tlvs,rtnetlink_link_linkinfo}},
-  {net_ns_pid,  binary_t},
+  {net_ns_pid,  uint32_t},
   {ifalias,     string_t},
   {num_vf,      uint32_t},
   {vfinfo_list, binary_t},
   {stats64,     {array,uint64_t}},
   {vf_ports,    binary_t},
   {port_self,   binary_t},
-  {af_spec,     binary_t},
+  {af_spec,     binary_t},  %% FIXME tlvs of something...
   {group,       uint32_t},  %% Group the device belongs to
-  {net_ns_fd,   binary_t},
+  {net_ns_fd,   uint32_t},
   {ext_mask,    binary_t},  %% Extended info mask, VFs, etc
-  {promiscuity, uint32_t}   %%  Promiscuity count: > 0 means acts PROMISC 
-
+  {promiscuity, uint32_t},  %%  Promiscuity count: > 0 means acts PROMISC 
+  %% fix types
+  {num_tx_queues, uint32_t},
+  {num_rx_queues, uint32_t},
+  {carrier,  uint8_t},
+  {phys_port_id,  binary_t},
+  {carrier_changes, uint32_t},
+  {phys_switch_id, binary_t},
+  {link_netnsid, binary_t},
+  {phys_port_name, binary_t},
+  {proto_down, binary_t},
+  {gso_max_segs, uint32_t},
+  {gso_max_size, uint32_t},
+  {pad, binary_t},
+  {xdp, binary_t},
+  {event, binary_t},
+  {new_netnsid, binary_t},
+  {target_netnsid, binary_t}, %% (was ifla_if_netnsid)
+  {carrier_up_count, uint32_t},
+  {carrier_down_count, uint32_t},
+  {new_ifindex, binary_t},
+  {min_mtu, uint32_t},
+  {max_mtu, uint32_t}
  ] }.
 
 {attribute, rtnetlink_prefix, 

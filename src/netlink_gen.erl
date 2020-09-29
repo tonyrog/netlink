@@ -41,21 +41,26 @@
 -define(char_t,  int8_t).
 -define(uchar_t, uint8_t).
 
+-type int_type() :: int8_t | int16_t | int32_t | int64_t |
+		    uint8_t | uint16_t | uint32_t | uint64_t.
+
+-type type() :: int_type() |
+		{enum, int_type(), EnumNames::atom()} |
+		{flags, int_type(), FlagNames::atom()} |
+		{tlvs, AttributeName::atom() } |
+		atom().
 
 -record(gen,
 	{
 	  error = 0 :: integer(), %% number of errors detected
-	  defs      :: term(),    %% Symbol -> Value
-	  enums     :: term(),    %% Name->[{atom(),integer()}]}
-	  attrs     :: term(),    %% Name->[{atom(),integer(),type()}]
-	  recs      :: term()     %% Name->[{atom(),integer(),type()}]
+	  defs  = #{} :: #{ atom() => term() },  %% Symbol -> Value
+	  enums = #{} :: #{ atom() => [{atom(),integer()}] },
+	  attrs = #{} :: #{ atom() => [{atom(),integer(),type()}] },
+	  recs  = #{} :: #{ atom() => [{Field::atom(),Pos::integer(),type()}] }
 	}).
 
 start() ->
-    G0 = #gen { defs  = dict:new(),
-		enums = dict:new(),
-		attrs = dict:new(),
-		recs  = dict:new() },
+    G0 = #gen { },
     {ok,Fd} = file:open(?INFILE, [read]),
     try fold_file_terms(fun load_term/3, G0, Fd) of
 	{ok,G1} -> 
@@ -68,19 +73,19 @@ start() ->
 
 load_term({define,Name,Value},Ln,G) ->
     Value1 = lookup_value(Value, G),
-    D = case dict:find(Name, G#gen.defs) of
+    D = case maps:find(Name, G#gen.defs) of
 	    {ok,Value1} ->
 		G#gen.defs;
 	    {ok,_Value2} -> 
 		io:format("~s:~w: warning ~s redefined\n", 
 			  [?INFILE,Ln,Name]),
-		dict:store(Name,Value1,G#gen.defs);
+		maps:put(Name,Value1,G#gen.defs);
 	    error ->
-		dict:store(Name,Value1,G#gen.defs)
+		maps:put(Name,Value1,G#gen.defs)
 	end,
     G#gen { defs = D };
 load_term({enum,Name,Enums}, Ln, G) when is_atom(Name), is_list(Enums) ->
-    case dict:find(Name, G#gen.enums) of
+    case maps:find(Name, G#gen.enums) of
 	{ok,_Enums} ->
 	    io:format("~s:~w: error ~s allready defined\n", 
 		      [?INFILE,Ln,Name]),
@@ -90,7 +95,7 @@ load_term({enum,Name,Enums}, Ln, G) when is_atom(Name), is_list(Enums) ->
 	    load_enums(Name,Enums,Ln,G)
     end;
 load_term({attribute,Name,Attrs}, Ln, G) when is_atom(Name), is_list(Attrs) ->
-    case dict:find(Name, G#gen.attrs) of
+    case maps:find(Name, G#gen.attrs) of
 	{ok,_Attrs} ->
 	    io:format("~s:~w: error ~s allready defined\n", 
 		      [?INFILE,Ln,Name]),
@@ -100,7 +105,7 @@ load_term({attribute,Name,Attrs}, Ln, G) when is_atom(Name), is_list(Attrs) ->
 	    load_attrs(Name,Attrs,Ln,G)
     end;
 load_term({record,Name,Fields}, Ln, G) when is_atom(Name), is_list(Fields) ->
-    case dict:find(Name, G#gen.recs) of
+    case maps:find(Name, G#gen.recs) of
 	{ok,_Attrs} ->
 	    io:format("~s:~w: error ~s allready defined\n", 
 		      [?INFILE,Ln,Name]),
@@ -110,7 +115,7 @@ load_term({record,Name,Fields}, Ln, G) when is_atom(Name), is_list(Fields) ->
 	    load_fields(Name,Fields,Ln,G)
     end;
 load_term({record,Name,Type}, Ln, G) when is_atom(Name), is_atom(Type) ->
-    case dict:find(Type, G#gen.recs) of
+    case maps:find(Type, G#gen.recs) of
 	error ->
 	    io:format("~s:~w: error ~s not defined\n", 
 		      [?INFILE,Ln,Type]),
@@ -118,7 +123,7 @@ load_term({record,Name,Type}, Ln, G) when is_atom(Name), is_atom(Type) ->
 	    G2 = load_fields(Type,[],Ln,G1),
 	    load_fields(Name,Type,Ln,G2);
 	{ok,_} ->
-	    case dict:find(Name, G#gen.recs) of
+	    case maps:find(Name, G#gen.recs) of
 		{ok,_Attrs} ->
 		    io:format("~s:~w: error ~s allready defined\n", 
 			      [?INFILE,Ln,Name]),
@@ -139,7 +144,7 @@ load_term(Other, Ln, G) ->
 load_enums(Name,Enums0,Ln,G) ->
     Enums = enumerate(Enums0,G),
     G1 = check_enumeration(Name,Enums,Ln,G),
-    D = dict:store(Name, Enums, G1#gen.enums),
+    D = maps:put(Name, Enums, G1#gen.enums),
     G1#gen { enums = D}.
 
 check_enumeration(Name,[{E,V}|Es],Ln,G) ->
@@ -188,14 +193,14 @@ enumerate([],_I,_Vs) ->
 %% Load record fields
 %%
 load_fields(Name,Type,_Ln,G) when is_atom(Type) ->
-    D = dict:store(Name, Type, G#gen.recs),
+    D = maps:put(Name, Type, G#gen.recs),
     G#gen { recs = D };
 load_fields(Name,Fields,Ln,G) ->
     Fields1 = [{F,I,T} || 
 		  {I,{F,T}} <- 
 		      lists:zip(lists:seq(1,length(Fields)),Fields)],
     G1 = check_fields(Name,Fields1,Ln,G),
-    D = dict:store(Name, Fields1, G1#gen.recs),
+    D = maps:put(Name, Fields1, G1#gen.recs),
     G1#gen { recs = D }.
 
 check_fields(Name,[{'_',_I,T}|Fs],Ln,G) ->
@@ -222,7 +227,7 @@ load_attrs(Name,Attrs,Ln,G) ->
     Attrs1 = [{A,I,T} || 
 		 {I,{A,T}} <- lists:zip(lists:seq(0,length(Attrs)-1),Attrs)],
     G1 = check_attrs(Name,Attrs1,Ln,G),
-    D = dict:store(Name, Attrs1, G1#gen.attrs),
+    D = maps:put(Name, Attrs1, G1#gen.attrs),
     G1#gen { attrs = D }.
 
 check_attrs(Name,[{A,_I,T}|As],Ln,G) ->
@@ -244,11 +249,11 @@ check_attrs(_Name,[],_Ln,G) ->
 emit_hrl(G) ->
     {ok,Fd} = file:open(?ERL_MOD++".hrl", [write]),
     try
-	dict:fold(
+	maps:fold(
 	  fun(K,V,_A) ->
 		  io:format(Fd, "-define(~s, ~w).\n", [K, V])
 	  end, ok, G#gen.defs),
-	dict:fold(
+	maps:fold(
 	  fun(K,V,_A) ->
 		  Fields = lookup_fields(V, G),
 		  Fs = list_to_tuple([N || {N,_I,_Type} <- Fields, N =/= '_']),
@@ -272,24 +277,24 @@ emit_erl(G) ->
     end.
 
 emit_codec_(Fd, G) ->
-    dict:fold(
+    maps:fold(
       fun(Name,_Tab,_) ->
 	      io:format(Fd, "-export([dec_~s/1, enc_~s/1]).\n", 
 			[Name,Name])
       end, ok, G#gen.enums),
-    dict:fold(
+    maps:fold(
       fun(Name,_Tab,_) ->
 	      io:format(Fd, "-export([dec_~s/1, enc_~s/1]).\n", 
 			[Name,Name])
       end, ok, G#gen.attrs),
-    dict:fold(
+    maps:fold(
       fun(Name,_Tab,_) ->
 	      io:format(Fd, "-export([dec_~s/1, enc_~s/1]).\n", 
 			[Name,Name])
       end, ok, G#gen.recs),
 
 
-    dict:fold(
+    maps:fold(
       fun(Name,Tab,_) ->
 	      %% decode
 	      lists:foreach(
@@ -307,7 +312,7 @@ emit_codec_(Fd, G) ->
 			[Name])
       end, ok, G#gen.enums),
     
-    dict:fold(
+    maps:fold(
       fun(Name,Tab0,_) ->
 	      %% extend addr_t => ipv4_addr_t | ipv6_addr_t
 	      Tab = lists:foldr(
@@ -344,7 +349,7 @@ emit_codec_(Fd, G) ->
 	      io:format(Fd,"enc_~s({I,Endian,X}) -> {I,Endian,X}.\n", [Name])
       end, ok, G#gen.attrs),
 
-    dict:fold(
+    maps:fold(
       fun(Name,RecType,_) ->
 	      Fields = lookup_fields(RecType, G),
 	      Named = [{Fi,Ix,Ti} || {Fi,Ix,Ti} <- Fields, Fi =/= '_'],
@@ -384,7 +389,7 @@ check_type(_Ctx, {enum,Type,Enum}, Ln, G)
   when is_atom(Type), is_atom(Enum) ->
     case is_integer_type(Type) of
 	true ->
-	    case dict:find(Enum, G#gen.enums) of
+	    case maps:find(Enum, G#gen.enums) of
 		{ok,_} -> G;
 		error ->
 		    io:format("~s:~w: enum type ~s not defined\n", 
@@ -400,7 +405,7 @@ check_type(_Ctx, {flags,Type,Enum}, Ln, G)
   when is_atom(Type), is_atom(Enum) ->
     case is_unsigned_type(Type) of
 	true ->
-	    case dict:find(Enum, G#gen.enums) of
+	    case maps:find(Enum, G#gen.enums) of
 		{ok,_} -> G;
 		error ->
 		    io:format("~s:~w: enum type ~s not defined\n", 
@@ -414,7 +419,7 @@ check_type(_Ctx, {flags,Type,Enum}, Ln, G)
     end;
 check_type(Ctx, {tlvs,Name}, Ln, G) ->
     %% fixme, check that Ctx is {attribute,...}
-    case dict:find(Name, G#gen.attrs) of
+    case maps:find(Name, G#gen.attrs) of
 	error ->
 	    io:format("~s:~w: attribute type ~s name not found in ~w\n", 
 		      [?INFILE,Ln,Name,Ctx]),
@@ -570,10 +575,10 @@ match_code(ipv6_addr_t,_,X,_G) ->
 %%    {string:join(Xm,","),
 %%     ["{", string:join(Xi,","), "}"]};
 match_code(Name,Endian,X,G) ->
-    case dict:find(Name, G#gen.recs) of
+    case maps:find(Name, G#gen.recs) of
 	error ->
 	    %% assume attribute!
-	    {ok,_} = dict:find(Name, G#gen.attrs),
+	    {ok,_} = maps:find(Name, G#gen.attrs),
 	    Decode = "dec_"++atom_to_list(Name),
 	    {[X,"/binary"], [Decode,"(netlink_codec:decode_tlv(",X,"))"]};
 	{ok,RecType} ->
@@ -694,7 +699,7 @@ gen_code(ipv6_addr_t,_,X,_G) ->
 %%    Xm = [J++":8" || J <- Xi],
 %%    {["{", string:join(Xi,","),"}"], string:join(Xm,",")};
 gen_code(Name,Endian,X,G) ->
-    case dict:find(Name, G#gen.recs) of
+    case maps:find(Name, G#gen.recs) of
 	error ->
 	    %% assume attribute!
 	    Encode = "enc_"++atom_to_list(Name),
@@ -743,7 +748,7 @@ io_list_join([A|As], Sep) -> [A,Sep|io_list_join(As,Sep)].
 %% Get record indirections
 %%
 lookup_fields(Name, G) when is_atom(Name) ->    
-    case dict:find(Name, G#gen.recs) of
+    case maps:find(Name, G#gen.recs) of
 	{ok,Name1} ->
 	    lookup_fields(Name1, G)
     end;
@@ -757,7 +762,7 @@ lookup_fields(Fields,_G) when is_list(Fields) ->
 lookup_value(Value, _G) when is_integer(Value) ->    
     Value;
 lookup_value(Name, G) when is_atom(Name) ->
-    case dict:find(Name, G#gen.defs) of
+    case maps:find(Name, G#gen.defs) of
 	{ok,Name} -> Name;  %% recursive!
 	{ok,Value} when is_atom(Value) -> lookup_value(Value,G);
 	{ok,Value} when is_integer(Value) -> Value;
@@ -766,9 +771,9 @@ lookup_value(Name, G) when is_atom(Name) ->
 
 %% lookup named type (record / attribute)
 lookup_type(Name, G) when is_atom(Name) ->
-    case dict:find(Name, G#gen.attrs) of
+    case maps:find(Name, G#gen.attrs) of
 	error ->
-	    case dict:find(Name, G#gen.recs) of
+	    case maps:find(Name, G#gen.recs) of
 		error ->
 		    false;
 		{ok,Value} -> {attribute,Name,Value}

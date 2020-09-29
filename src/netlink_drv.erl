@@ -87,7 +87,7 @@ debug(Port,Level) when is_atom(Level) ->
 open(Protocol) when is_integer(Protocol), Protocol >= 0 ->
     Driver = "netlink_drv",
     Path = code:priv_dir(netlink),
-    io:format("load_driver '~s' from: '~s'\n", [Driver, Path]),
+    %% io:format("load_driver '~s' from: '~s'\n", [Driver, Path]),
     case erl_ddll:load_driver(Path, Driver) of
 	ok ->
 	    Arg = integer_to_list(Protocol),
