@@ -31,8 +31,8 @@
 -export([invalidate/2]).
 -export([get_root/2, get_match/3, get/4]).
 -export([getiflist/0]).
--export([get_link_attr/1]).
--export([get_addr_attr/1]).
+-export([get_link_attr/1, get_link_attr/2]).
+-export([get_addr_attr/1, get_addr_attr/2]).
 
 -include("log.hrl").
 -include("netlink.hrl").
@@ -146,10 +146,16 @@ list(Match) ->
 
 %% return link attributes from interface index or interface name
 get_link_attr(IndexOrName) ->
-    gen_server:call(?SERVER, {get_link_attr,IndexOrName}).
+    get_link_attr(IndexOrName, all).
+
+get_link_attr(IndexOrName, Fields) ->
+    gen_server:call(?SERVER, {get_link_attr,IndexOrName,Fields}).
 
 get_addr_attr(IndexOrName) ->
-    gen_server:call(?SERVER, {get_addr_attr,IndexOrName}).
+    get_addr_attr(IndexOrName, all).
+
+get_addr_attr(IndexOrName,Fields) ->
+    gen_server:call(?SERVER, {get_addr_attr,IndexOrName,Fields}).
 
 getiflist() ->
     gen_server:call(?SERVER, getiflist).
@@ -347,34 +353,46 @@ handle_call(Req={get,_What,_Fam,_Flags,_Attrs}, From, State) ->
     {noreply, State2};
 
 %% Match?
-handle_call({get_link_attr,Index}, _From, State) when is_integer(Index) ->
+handle_call({get_link_attr,Index,Fields},_From,State) when is_integer(Index) ->
     case lists:keyfind(Index, #link.index, State#state.link_list) of
 	false ->
 	    {reply, {error,enoent}, State};
 	L ->
-	    {reply, {L#link.name,L#link.index,L#link.attr}, State}
+	    {reply, {L#link.name,
+		     L#link.index,
+		     get_match(Fields, L#link.attr)}, State}
     end;
-handle_call({get_link_attr,Name}, _From, State) when is_list(Name) ->
+handle_call({get_link_attr,Name,Fields}, _From, State) when is_list(Name) ->
     case lists:keyfind(Name, #link.name, State#state.link_list) of
 	false ->
 	    {reply, {error,enoent}, State};
 	L ->
-	    {reply, {L#link.name,L#link.index,L#link.attr}, State}
+	    {reply, {L#link.name,
+		     L#link.index,
+		     get_match(Fields, L#link.attr)}, State}
     end;
 
-%% Match?
-handle_call({get_addr_attr,Index}, _From, State) when is_integer(Index) ->
-    As = [A || A <- State#state.addr_list, element(1,A#addr.iaddr) =:= Index],
+handle_call({get_addr_attr,Index,Fields},_From,State) when is_integer(Index) ->
+    As = [A || A <- State#state.addr_list, A#addr.index =:= Index],
     {reply, [{element(2,A#addr.iaddr),
-	      A#addr.name,A#addr.index,A#addr.attr} || A <- As], State};
-handle_call({get_addr_attr,Name}, _From, State) when is_list(Name) ->
-    As = [A || A <- State#state.addr_list, A#addr.name =:= Name],
+	      A#addr.name,A#addr.index,
+	      get_match(Fields, A#addr.attr)} || A <- As], State};
+handle_call({get_addr_attr,Name,Fields}, _From, State) when is_list(Name) ->
+    As = case inet:parse_address(Name) of
+	     {error,_} ->
+		 [A || A <- State#state.addr_list, A#addr.name =:= Name];
+	     {ok,Addr} ->
+		 [A || A <- State#state.addr_list, element(2,A#addr.iaddr) 
+			   =:= Addr]
+	 end,
     {reply, [{element(2,A#addr.iaddr),
-	      A#addr.name,A#addr.index,A#addr.attr} || A <- As], State};
-handle_call({get_addr_attr,Addr}, _From, State) when is_tuple(Addr) ->
+	      A#addr.name,A#addr.index,
+	      get_match(Fields, A#addr.attr)} || A <- As], State};
+handle_call({get_addr_attr,Addr,Fields}, _From, State) when is_tuple(Addr) ->
     As = [A || A <- State#state.addr_list, element(2,A#addr.iaddr) =:= Addr],
     {reply, [{element(2,A#addr.iaddr),
-	      A#addr.name,A#addr.index,A#addr.attr} || A <- As], State};
+	      A#addr.name,A#addr.index,
+	      get_match(Fields, A#addr.attr)} || A <- As], State};
 
 handle_call(getiflist, _From, State) ->
     {reply, {ok, [L#link.name || L <- State#state.link_list]}, State};
@@ -737,6 +755,36 @@ send_event(_Name,_Type,_Field,_Old,_New,[]) ->
     ok.
 
 %% FIXME: Use match in subscriptions?	    
+get_match(all, Map) ->
+    maps:to_list(Map);
+get_match(Field, Map) when is_atom(Field) ->
+    case maps:find(Field,Map) of
+	error -> undefined;
+	{ok,Value} -> Value
+    end;
+get_match(Match, Map) ->
+    get_match_(Match, Map, []).
+
+get_match_([Field|Match], Map, Acc) when is_atom(Field) ->
+    case maps:find(Field,Map) of
+	error -> get_match_(Match, Map, Acc);
+	{ok,Value} -> get_match_(Match, Map, [{Field,Value}|Acc])
+    end;
+get_match_([{Op,Field,Value}|Match], Map, Acc) when is_atom(Field) ->
+    case maps:find(Field,Map) of
+	error -> get_match_(Match, Map, Acc);
+	{ok,FValue} ->
+	    case compare(Op,FValue,Value) of
+		true ->
+		    get_match_(Match, Map, [{Field,FValue}|Acc]);
+		false ->
+		    get_match_(Match, Map, Acc)
+	    end
+    end;
+get_match_([], _Map, Acc) ->
+    Acc.
+
+
 
 match(Y,L,[{Field,Value}|Match]) when is_atom(Field) ->
     case find2(Field,Y,L) of
