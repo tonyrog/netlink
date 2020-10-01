@@ -10,7 +10,7 @@
 -export([encode_flags/2]).
 -export([decode_flags/2]).
 -export([encode_tlv/1, encode_tlv_list/1]).
--export([decode_tlv/1, decode_tlv_list/1]).
+-export([decode_tlv/1, decode_tlv/2, decode_tlv_list/1]).
 
 -export([decode/2]).
 -export([encode/2]).
@@ -85,10 +85,29 @@ next_tlv(<<Len0:16/native-unsigned, _:16, Data/binary>>) ->
     <<_:Len/binary, _:Pad/unit:8, Data1/binary>> = Data,
     Data1.
 
+
+-ifdef(OTP_RELEASE).
+-if (?OTP_RELEASE >= 23).
+%% -warning("OTP_RELEASE >= 32").
+decode_tlv(<<Len0:16/native-unsigned,Type0:16/native-unsigned,
+	     Payload:(Len0-?NLA_HDRLEN)/binary,_/binary>>) ->
+    decode_tlv(Type0, Payload).
+-else.
 decode_tlv(<<Len0:16/native-unsigned, Type0:16/native-unsigned,
-	 Rest/binary>>) ->
+	     Rest/binary>>) ->
     Len = Len0 - ?NLA_HDRLEN,
     <<Payload:Len/binary, _/binary>> = Rest,
+    decode_tlv(Type0, Payload).
+-endif.
+-else.
+decode_tlv(<<Len0:16/native-unsigned, Type0:16/native-unsigned,
+	     Rest/binary>>) ->
+    Len = Len0 - ?NLA_HDRLEN,
+    <<Payload:Len/binary, _/binary>> = Rest,
+    decode_tlv(Type0, Payload).
+-endif.
+
+decode_tlv(Type0, Payload) ->
     Type = Type0 band 16#3fff,
     if Type0 band 16#8000 =:= 16#8000 ->
 	    {Type, native, decode_tlv_list(Payload)};

@@ -52,11 +52,12 @@
 
 -record(gen,
 	{
-	  error = 0 :: integer(), %% number of errors detected
-	  defs  = #{} :: #{ atom() => term() },  %% Symbol -> Value
-	  enums = #{} :: #{ atom() => [{atom(),integer()}] },
-	  attrs = #{} :: #{ atom() => [{atom(),integer(),type()}] },
-	  recs  = #{} :: #{ atom() => [{Field::atom(),Pos::integer(),type()}] }
+	 error = 0 :: integer(), %% number of errors detected
+	 level = 0 :: integer(), %% nesting level (used for nested records)
+	 defs  = #{} :: #{ atom() => term() },  %% Symbol -> Value
+	 enums = #{} :: #{ atom() => [{atom(),integer()}] },
+	 attrs = #{} :: #{ atom() => [{atom(),integer(),type()}] },
+	 recs  = #{} :: #{ atom() => [{Field::atom(),Pos::integer(),type()}] }
 	}).
 
 start() ->
@@ -353,7 +354,7 @@ emit_codec_(Fd, G) ->
       fun(Name,RecType,_) ->
 	      Fields = lookup_fields(RecType, G),
 	      Named = [{Fi,Ix,Ti} || {Fi,Ix,Ti} <- Fields, Fi =/= '_'],
-	      {Ms,Rs} = match_record_code(Fields, native, "X", G),
+	      {Ms,Rs} = match_record_code(Name, Fields, native, "X", G),
 	      M = io_list_join(Ms, ","),
 	      Rs1 = lists:map(fun({{Fi,_,_Ti},Ri}) ->
 				      [atom_to_list(Fi),"=",Ri]
@@ -417,6 +418,8 @@ check_type(_Ctx, {flags,Type,Enum}, Ln, G)
 		      [?INFILE,Ln]),
 	    inc_error(G)
     end;
+check_type(_Ctx, {tlvs,binary_t}, _Ln, G) -> %% easier to debug tlv fields
+    G;
 check_type(Ctx, {tlvs,Name}, Ln, G) ->
     %% fixme, check that Ctx is {attribute,...}
     case maps:find(Name, G#gen.attrs) of
@@ -552,10 +555,14 @@ match_code({array,BaseType},Endian,X,G) ->
     {[X,"/binary"], ["[",Value," || <<",Match,">> <= ",X,"]"] };
 match_code({tlvs,Name},_Endian,X,_G) ->
     Xi = X++"i",
-    Decode = "dec_"++atom_to_list(Name),
-    {[X,"/binary"],
-     ["[",Decode,"(",Xi,") || ",
-      Xi," <- netlink_codec:decode_tlv_list(",X,")]"]};
+    Decode  = if Name =:= binary_t ->
+		      "fun(B) -> B end";
+		 true ->
+		      "dec_"++atom_to_list(Name)
+	      end,
+     {[X,"/binary"],
+      ["[",Decode,"(",Xi,") || ",
+       Xi," <- netlink_codec:decode_tlv_list(",X,")]"]};
 match_code(ether_addr_t, _, X,_G) ->
     Xs = [X++integer_to_list(I) || I <- lists:seq(1,6)],
     {string:join(Xs,","), ["{", string:join(Xs,","), "}"]};
@@ -584,7 +591,7 @@ match_code(Name,Endian,X,G) ->
 	{ok,RecType} ->
 	    Fields = lookup_fields(RecType,G),
 	    Named = [{Fi,Ix,Ti} || {Fi,Ix,Ti} <- Fields, Fi =/= '_'],
-	    {Ms,Rs} = match_record_code(Fields, Endian, X, G),
+	    {Ms,Rs} = match_record_code(Name, Fields, Endian, X, G),
 	    M = io_list_join(Ms, ","),
 	    Rs1 = lists:map(fun({{Fi,_,_Ti},Ri}) ->
 				    [atom_to_list(Fi),"=",Ri]
@@ -593,9 +600,20 @@ match_code(Name,Endian,X,G) ->
 	    {M, R}
     end.
 
-match_record_code(Fs, Endian, X, G) ->
-    match_record_code_(Fs, Endian, X, G, [], []).
+match_record_code(_Name, Fs, Endian, X, G) ->
+    G1 = inc_level(G),
+    %% io:format("generate match record ~s level=~w\n",[_Name, G1#gen.level]),
+    match_record_code_(Fs, Endian, X, G1, [], []).
 
+%% special case for last entry names attributes with type tlvs
+match_record_code_([{attributes,_Ix,{tlvs,Name}}], Endian, X0, G, Ms, Rs) ->
+    {M,R} = match_code({tlvs,Name},Endian,X0,G),
+    {lists:reverse([M|Ms]), lists:reverse([R|Rs])};
+%% special case 2 if last field is a binary it takes the reste!
+match_record_code_([{_Field,Ix,binary_t}], Endian, X, G, Ms, Rs) ->
+    Xi = X++integer_to_list(Ix),
+    {M,R} = match_code(binary_t, Endian, Xi, G),
+    {lists:reverse([M|Ms]), lists:reverse([R|Rs])};
 match_record_code_([{'_',_Ix,Type}|Fs], Endian, X, G, Ms, Rs) ->
     {M,_R} = match_code(Type, Endian, "_", G),
     match_record_code_(Fs, Endian, X, G, [M|Ms], Rs);
@@ -603,7 +621,12 @@ match_record_code_([{_Field,Ix,Type}|Fs], Endian, X, G, Ms, Rs) ->
     Xi = X++integer_to_list(Ix),
     {M,R} = match_code(Type, Endian, Xi, G),
     match_record_code_(Fs, Endian, X, G, [M|Ms], [R|Rs]);
+match_record_code_([], Endian, _X, G, Ms, Rs) when G#gen.level =< 1 ->
+    %% we may or should ignore tail bytes (padding etc)
+    {M,_R} = match_code(binary_t, Endian, "_", G),
+    {lists:reverse([M|Ms]), lists:reverse(Rs)};
 match_record_code_([], _Endian, _X, _G, Ms, Rs) ->
+    %% we can not ignore padded data
     {lists:reverse(Ms), lists:reverse(Rs)}.
 
 %%
@@ -654,7 +677,7 @@ gen_code(int16_t,little,X,_G) -> gen_int_code(X,16,signed,little);
 gen_code(int8_t,little,X,_G)  -> gen_int_code(X,8,signed,little);
 
 gen_code(binary_t, _Endian, X,_G) -> 
-    {X, X};
+    {X, [X,"/binary"]};
 gen_code(string_t, _Endian, X,_G) -> 
     {X, ["(erlang:iolist_to_binary([",X,",0","]))/binary"]};
 
@@ -677,7 +700,11 @@ gen_code({array,BaseType},Endian,X,G) ->
 
 gen_code({tlvs,Name},_Endian,X,_G) ->
     Xi = X++"i",
-    Encode = "enc_"++atom_to_list(Name),
+    Encode = if Name =:= binary_t ->
+		     "fun (B) -> B end";
+		true ->
+		     "enc_"++atom_to_list(Name)
+	     end,
     {X, [ "(netlink_codec:encode_tlv_list(",
 	  "[",Encode,"(",Xi,") || ", Xi," <- ",X,"]", "))/binary"]};
 
@@ -716,8 +743,6 @@ gen_code(Name,Endian,X,G) ->
 	    B = io_list_join(Bs, ","),
 	    {R, B}
     end.
-
-
 
 gen_record_code(Fs, Endian, X, G) ->
     gen_record_code_(Fs, Endian, X, G, [], []).
@@ -785,6 +810,8 @@ lookup_type(Name, G) when is_atom(Name) ->
 inc_error(G) ->
     G#gen { error = G#gen.error + 1}.
 
+inc_level(G) ->
+    G#gen { level = G#gen.level + 1}.
 
 %% util to fold all terms in a file
 fold_file_terms(Fun, Acc, Fd) ->

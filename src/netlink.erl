@@ -34,9 +34,17 @@
 -export([get_link_attr/1, get_link_attr/2]).
 -export([get_addr_attr/1, get_addr_attr/2]).
 
--include("log.hrl").
+%% -include("log.hrl").
 -include("netlink.hrl").
 -include("netl_codec.hrl").
+
+-define(error(F, A), io:format((F)++"\n",(A))).
+%%-define(debug(F, A), io:format((F)++"\n",(A))).
+-define(debug(F, A), ok).
+%%-define(warning(F, A), io:format((F)++"\n",(A))).
+-define(warning(F, A), ok).
+%%-define(info(F, A), io:format((F)++"\n",(A))).
+-define(info(F, A), ok).
 
 -ifdef(OTP_RELEASE). %% this implies 21 or higher
 -define(EXCEPTION(Class, Reason, Stacktrace), Class:Reason:Stacktrace).
@@ -76,27 +84,29 @@
 -type match_t() ::  {Field::attr_name(),Value::term()} |
 		    {Op::match_op_t(),Field::attr_name(),Value::term()}.
 
--record(link,
+-type attr_t() :: #{ attr_name() => term() }.
+
+-record(link, 
 	{
 	 name     :: if_name(),           %% interface name (unique)
 	 index    :: if_index(),          %% interface index (unique)
-	 attr     :: #{ attr_name() => term() } %% attributes
+	 addr     :: #{ if_addr() => attr_t() },
+	 attr     :: attr_t() %% attributes
 	}).
 
 -record(addr,
 	{
-	 iaddr  :: {if_index(),if_addr()}, %% index and address (unique)
-	 name   :: if_name(),       %% interface label
-	 index  :: if_index(),      %% interface index
+	 iaddr  :: {if_index(),if_addr()},    %% index and address (unique)
+	 index  :: if_index(),                %% interface index
 	 attr   :: #{ attr_name() => term() } %% attributes
 	}).
 
 -record(subscription,
 	{
-	  pid  :: pid(),               %% subscriber
-	  mon  :: reference(),         %% monitor
-	  name :: string(),            %% name
-	  fields=all :: all | addr | link | [if_field()]
+	 pid  :: pid(),               %% subscriber
+	 mon  :: reference(),         %% monitor
+	 name :: string(),            %% name
+	 fields=all :: all | addr | link | [if_field()]
 	}).
 
 -define(MIN_RCVBUF,  (128*1024)).
@@ -106,24 +116,25 @@
 
 -record(request,
 	{
-	  tmr,      %% timer reference
-	  call,     %% call request
-	  from,     %% caller
-	  reply=ok, %% reply to send when done
-	  seq=0     %% sequence to expect in reply
+	 tmr,      %% timer reference
+	 call,     %% call request
+	 from,     %% caller
+	 reply=ok, %% reply to send when done
+	 seq=0     %% sequence to expect in reply
 	}).
 
 -record(state, 
 	{
-	  port,
-	  link_list  = [] :: [#link {}],
-	  addr_list  = [] :: [#addr {}],
-	  sub_list   = [] :: [#subscription {}],
-	  request         :: undefined | #request{},
-	  request_queue = [] :: [#request{}],
-	  o_seq = 0,
-	  i_seq = 0,
-	  ospid
+	 port,
+	 %% fixme links = #{} :: #{ if_index() => #link{} }
+	 link_list  = [] :: [#link {}],
+	 addr_list  = [] :: [#addr {}],
+	 sub_list   = [] :: [#subscription {}],
+	 request         :: undefined | #request{},
+	 request_queue = [] :: [#request{}],
+	 o_seq = 0,
+	 i_seq = 0,
+	 ospid
         }).
 
 %%%===================================================================
@@ -183,7 +194,7 @@ subscribe(Name) ->
 subscribe(Name,Fields) ->
     subscribe(Name,Fields, []).
 
--spec subscribe(Name::string(),Fields::all|[if_field()],Otions::[atom()]) ->
+-spec subscribe(Name::string(),Fields::all|[if_field()],Otions::[flush]) ->
 	  {ok,reference()}.
 
 subscribe(Name,Fields,Options) ->
@@ -192,7 +203,8 @@ subscribe(Name,Fields,Options) ->
 unsubscribe(Ref) ->
     gen_server:call(?SERVER, {unsubscribe,Ref}).
 
-%% clear all attributes for interface Name
+%% clear all attributes for interface Name - to generate new events
+%% should be synced somehow.
 invalidate(Name,Fields) ->
     gen_server:call(?SERVER, {invalidate,Name,Fields}).
 
@@ -251,13 +263,13 @@ init_drv(Opts, State) ->
 
     netlink_drv:debug(Port, proplists:get_value(debug,Opts,none)),
 
-    {ok,Rcvbuf} = update_rcvbuf(Port, ?MIN_RCVBUF),
-    {ok,Sndbuf} = update_sndbuf(Port, ?MIN_SNDBUF),
+    {ok,_Rcvbuf} = update_rcvbuf(Port, ?MIN_RCVBUF),
+    {ok,_Sndbuf} = update_sndbuf(Port, ?MIN_SNDBUF),
 
-    ?info("Rcvbuf: ~w, Sndbuf: ~w", [Rcvbuf, Sndbuf]),
+    ?info("Rcvbuf: ~w, Sndbuf: ~w", [_Rcvbuf, _Sndbuf]),
 
-    {ok,Sizes} = netlink_drv:get_sizeof(Port),
-    ?info("Sizes: ~w", [Sizes]),
+    {ok,_Sizes} = netlink_drv:get_sizeof(Port),
+    ?info("Sizes: ~w", [_Sizes]),
 
     ok = netlink_drv:add_membership(Port, ?RTNLGRP_LINK),
     ok = netlink_drv:add_membership(Port, ?RTNLGRP_IPV4_IFADDR),
@@ -321,8 +333,9 @@ handle_call({subscribe,Pid,Name,Options,Fs}, _From, State) ->
 	      end, State#state.link_list),
 	    lists:foreach(
 	      fun(Y) ->
+		      Name = name_from_index(Y#addr.index,State),
 		      As = maps:to_list(Y#addr.attr),
-		      update_attrs(Y#addr.name,addr,As,#{},[S])
+		      update_attrs(Name,addr,As,#{},[S])
 	      end, State#state.addr_list),
 	    {reply, {ok,Mon}, State#state { sub_list = SList }}
     end;
@@ -359,7 +372,7 @@ handle_call({get_link_attr,Index,Fields},_From,State) when is_integer(Index) ->
 	    {reply, {error,enoent}, State};
 	L ->
 	    {reply, {L#link.name,
-		     L#link.index,
+		     Index,
 		     get_match(Fields, L#link.attr)}, State}
     end;
 handle_call({get_link_attr,Name,Fields}, _From, State) when is_list(Name) ->
@@ -373,26 +386,20 @@ handle_call({get_link_attr,Name,Fields}, _From, State) when is_list(Name) ->
     end;
 
 handle_call({get_addr_attr,Index,Fields},_From,State) when is_integer(Index) ->
-    As = [A || A <- State#state.addr_list, A#addr.index =:= Index],
-    {reply, [{element(2,A#addr.iaddr),
-	      A#addr.name,A#addr.index,
-	      get_match(Fields, A#addr.attr)} || A <- As], State};
+    {reply, match_addr_attr(Index,Fields,State), State};
 handle_call({get_addr_attr,Name,Fields}, _From, State) when is_list(Name) ->
-    As = case inet:parse_address(Name) of
-	     {error,_} ->
-		 [A || A <- State#state.addr_list, A#addr.name =:= Name];
-	     {ok,Addr} ->
-		 [A || A <- State#state.addr_list, element(2,A#addr.iaddr) 
-			   =:= Addr]
-	 end,
-    {reply, [{element(2,A#addr.iaddr),
-	      A#addr.name,A#addr.index,
-	      get_match(Fields, A#addr.attr)} || A <- As], State};
+    case index_from_name(Name, State) of
+	undefined ->
+	    {reply, [], State};
+	Index ->
+	    {reply, match_addr_attr(Index,Fields,State), State}
+    end;
+
 handle_call({get_addr_attr,Addr,Fields}, _From, State) when is_tuple(Addr) ->
     As = [A || A <- State#state.addr_list, element(2,A#addr.iaddr) =:= Addr],
     {reply, [{element(2,A#addr.iaddr),
-	      A#addr.name,A#addr.index,
-	      get_match(Fields, A#addr.attr)} || A <- As], State};
+	      A#addr.index,get_match(Fields, A#addr.attr)} || 
+		A <- As], State};
 
 handle_call(getiflist, _From, State) ->
     {reply, {ok, [L#link.name || L <- State#state.link_list]}, State};
@@ -465,13 +472,13 @@ handle_info(_Info={nl_data,Port,Data},State) when Port =:= State#state.port ->
 	    {noreply, State}
     end;
 
-handle_info({'DOWN',Ref,process,Pid,Reason}, State) ->
+handle_info({'DOWN',Ref,process,_Pid,_Reason}, State) ->
     case lists:keytake(Ref, #subscription.mon, State#state.sub_list) of
 	false ->
 	    {noreply,State};
 	{value,_S,SubList} ->
 	    ?debug("subscription from pid ~p deleted reason=~p",
-		   [Pid, Reason]),
+		   [_Pid, _Reason]),
 	    {noreply,State#state { sub_list=SubList }}
     end;
 handle_info({timeout,Tmr,request_timeout}, State) ->
@@ -493,8 +500,8 @@ handle_info({timeout,Tmr,request_timeout}, State) ->
 		    {noreply,dispatch_command(State1)}
 	    end
     end;
-handle_info({Tag, Reply}, State) when is_reference(Tag) ->
-    ?debug("INFO: SELF Reply=~p", [Reply]),
+handle_info({Tag, _Reply}, State) when is_reference(Tag) ->
+    ?debug("INFO: SELF Reply=~p", [_Reply]),
     {noreply, State};    
 handle_info(_Info, State) ->
     ?debug("INFO: ~p", [_Info]),
@@ -607,9 +614,9 @@ get_command(addr,Fam,Flags,Attrs,State) ->
     netlink_drv:send(State#state.port, Request),
     State#state { o_seq = (Seq+1) band 16#ffffffff}.
 
-handle_nlmsg(RTM=#newlink{family=_Fam,index=Index,flags=Fs,change=Cs,
+handle_nlmsg(_RTM=#newlink{family=_Fam,index=Index,flags=Fs,change=Cs,
 			  attributes=As}, State) ->
-    ?debug("RTM = ~p", [RTM]),
+    ?debug("RTM = ~p", [_RTM]),
     Name = proplists:get_value(ifname, As, ""),
     As1 = [{index,Index},{flags,Fs},{change,Cs}|As],
     case lists:keytake(Index,#link.index,State#state.link_list) of
@@ -623,9 +630,9 @@ handle_nlmsg(RTM=#newlink{family=_Fam,index=Index,flags=Fs,change=Cs,
 	    L1 = L#link { name = Name, attr = Attr },
 	    State#state { link_list = [L1|Ls] }
     end;
-handle_nlmsg(RTM=#dellink{family=_Fam,index=Index,flags=_Fs,change=_Cs,
+handle_nlmsg(_RTM=#dellink{family=_Fam,index=Index,flags=_Fs,change=_Cs,
 			  attributes=As}, State) ->
-    ?debug("RTM = ~p\n", [RTM]),
+    ?debug("RTM = ~p\n", [_RTM]),
     Name = proplists:get_value(ifname, As, ""),
     %% does this delete the link?
     case lists:keytake(Index, #link.index, State#state.link_list) of
@@ -637,17 +644,16 @@ handle_nlmsg(RTM=#dellink{family=_Fam,index=Index,flags=_Fs,change=_Cs,
 	    update_attrs(Name,link,As1,undefined,State#state.sub_list),
 	    State#state { link_list = Ls }
     end;
-handle_nlmsg(RTM=#newaddr { family=Fam, prefixlen=Prefixlen,
+handle_nlmsg(_RTM=#newaddr { family=Fam, prefixlen=Prefixlen,
 			    flags=Flags, scope=Scope,
 			    index=Index, attributes=As },
 	     State) ->
-    ?debug("RTM = ~p", [RTM]),
+    ?debug("RTM = ~p", [_RTM]),
     Addr = proplists:get_value(address, As, {}),
-    Name = proplists:get_value(label, As, ""),
     As1 = [{family,Fam},{prefixlen,Prefixlen},{flags,Flags},
 	   {scope,Scope},{index,Index} | As],
-    case lists:keymember(Index,#link.index,State#state.link_list) of
-	false ->
+    Name = name_from_index(Index, State),
+    if Name =:= undefined ->
 	    ?warning("link index ~p does not exist", [Index]);
 	true ->
 	    ok
@@ -655,26 +661,27 @@ handle_nlmsg(RTM=#newaddr { family=Fam, prefixlen=Prefixlen,
     IAddr = {Index,Addr},
     case lists:keytake(IAddr,#addr.iaddr,State#state.addr_list) of
 	false ->
-	    Attrs = update_attrs(Name,addr,As1,#{},State#state.sub_list),
-	    Y = #addr { iaddr=IAddr, name = Name, index=Index, attr=Attrs },
+	    Attr = update_attrs(Name,addr,As1,#{},State#state.sub_list),
+	    Y = #addr { iaddr=IAddr, index=Index, attr=Attr },
 	    Ys = [Y|State#state.addr_list],
 	    State#state { addr_list = Ys };
 	{value,Y,Ys} ->
 	    Attr = update_attrs(Name,addr,As1,Y#addr.attr,State#state.sub_list),
-	    Y1 = Y#addr { name=Name, attr=Attr },
+	    Y1 = Y#addr { attr=Attr },
 	    State#state { addr_list = [Y1|Ys] }
     end;
 
-handle_nlmsg(RTM=#deladdr { family=_Fam, index=Index, attributes=As },
+handle_nlmsg(_RTM=#deladdr { family=_Fam, index=Index, attributes=As },
 	     State) ->
-    ?debug("RTM = ~p", [RTM]),
+    ?debug("RTM = ~p", [_RTM]),
     %% FIXME: address should be uniq per Index then key is {Index,Addr}
     Addr = proplists:get_value(address, As, {}),
-    Name = proplists:get_value(label, As, ""),
+    Name = name_from_index(Index, State),
     IAddr = {Index,Addr},
     case lists:keytake(IAddr, #addr.iaddr, State#state.addr_list) of
 	false ->
-	    ?warning("Warning addr=~s not found", [Addr]),
+	    ?warning("Warning addr=~p for index=~w not found", 
+		     [Addr,Index]),
 	    State;
 	{value,Y,Ys} ->
 	    As1 = maps:to_list(Y#addr.attr),
@@ -708,8 +715,8 @@ handle_nlmsg(Err=#error { errno=Err }, State) ->
 	    dispatch_command(State1)
     end;
 
-handle_nlmsg(RTM, State) ->
-    ?debug("netlink: handle_nlmsg, ignore ~p", [RTM]),
+handle_nlmsg(_RTM, State) ->
+    ?debug("netlink: handle_nlmsg, ignore ~p", [_RTM]),
     State.
 
 %% update attributes form interface "Name"
@@ -754,6 +761,26 @@ send_event(Name,Type,Field,Old,New,[_|SList]) ->
 send_event(_Name,_Type,_Field,_Old,_New,[]) ->
     ok.
 
+%% Fixme: keep index -> name, name -> index in map?
+index_from_name(Name, State) ->
+    case lists:keyfind(Name, #link.name, State#state.link_list) of
+	false -> undefined;
+	L -> L#link.index
+    end.
+
+name_from_index(Index, State) ->
+    case lists:keyfind(Index, #link.index, State#state.link_list) of
+	false -> undefined;
+	L -> L#link.name
+    end.
+
+match_addr_attr(Index, Fields, State) ->
+    As = [A || A <- State#state.addr_list, A#addr.index =:= Index],
+    [{element(2,A#addr.iaddr),
+      A#addr.index,
+      get_match(Fields, A#addr.attr)} || A <- As].
+
+
 %% FIXME: Use match in subscriptions?	    
 get_match(all, Map) ->
     maps:to_list(Map);
@@ -762,8 +789,11 @@ get_match(Field, Map) when is_atom(Field) ->
 	error -> undefined;
 	{ok,Value} -> Value
     end;
-get_match(Match, Map) ->
-    get_match_(Match, Map, []).
+get_match(Match, Map) when is_list(Match) ->
+    get_match_(Match, Map, []);
+get_match(_, _Map) ->
+    [].
+
 
 get_match_([Field|Match], Map, Acc) when is_atom(Field) ->
     case maps:find(Field,Map) of
@@ -781,6 +811,8 @@ get_match_([{Op,Field,Value}|Match], Map, Acc) when is_atom(Field) ->
 		    get_match_(Match, Map, Acc)
 	    end
     end;
+get_match_([_ | Match], Map, Acc) ->
+    get_match_(Match, Map, Acc);
 get_match_([], _Map, Acc) ->
     Acc.
 

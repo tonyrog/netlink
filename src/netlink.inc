@@ -766,8 +766,7 @@
   {baseaddr,  uint64_t},
   {irq,       uint16_t},
   {dma,       uint8_t},
-  {port,      uint8_t},
-  {'_',       uint32_t}  %% fixme pad 0/32 depending on machine
+  {port,      uint8_t}
  ]}.
 
 {attribute, rtnetlink_route, 
@@ -820,6 +819,86 @@
   {icmp6stats,  {array,uint64_t}}
  ]}.
 
+%% This struct should be in sync with struct rtnl_link_stats64
+%% {record, rtnl_link_stats, [
+%% 	{rx_packets, uint32_t},		%% total packets received	
+%% 	{tx_packets, uint32_t},		%% total packets transmitted	
+%% 	{rx_bytes, uint32_t},		%% total bytes received 	
+%% 	{tx_bytes, uint32_t},		%% total bytes transmitted	
+%% 	{rx_errors, uint32_t},		%% bad packets received		
+%% 	{tx_errors, uint32_t},		%% packet transmit problems	
+%% 	{rx_dropped, uint32_t},		%% no space in linux buffers	
+%% 	{tx_dropped, uint32_t},		%% no space available in linux	
+%% 	{multicast, uint32_t},		%% multicast packets received	
+%% 	{collisions, uint32_t},
+%%
+%% 	%% detailed rx_errors: 
+%% 	{rx_length_errors, uint32_t},
+%% 	{rx_over_errors, uint32_t},		%% receiver ring buff overflow	
+%% 	{rx_crc_errors, uint32_t},		%% recved pkt with crc error	
+%% 	{rx_frame_errors, uint32_t},	%% recv'd frame alignment error 
+%% 	{rx_fifo_errors, uint32_t},		%% recv'r fifo overrun		
+%% 	{rx_missed_errors, uint32_t},	%% receiver missed packet	
+%%
+%% 	%% detailed tx_errors 
+%% 	{tx_aborted_errors, uint32_t},
+%% 	{tx_carrier_errors, uint32_t},
+%% 	{tx_fifo_errors, uint32_t},
+%% 	{tx_heartbeat_errors, uint32_t},
+%% 	{tx_window_errors, uint32_t},
+%%
+%% 	%% for cslip etc 
+%% 	{rx_compressed, uint32_t},
+%% 	{tx_compressed, uint32_t},
+%%
+%% 	{rx_nohandler, uint32_t}		%% dropped, no handler found	
+%% ]}.
+%%
+%% %% The main device statistics structure 
+%% {record, rtnl_link_stats64, [
+%% 	{rx_packets, uint64_t},		%% total packets received	
+%% 	{tx_packets, uint64_t},		%% total packets transmitted	
+%% 	{rx_bytes, uint64_t},		%% total bytes received 	
+%% 	{tx_bytes, uint64_t},		%% total bytes transmitted	
+%% 	{rx_errors, uint64_t},		%% bad packets received		
+%% 	{tx_errors, uint64_t},		%% packet transmit problems	
+%% 	{rx_dropped, uint64_t},		%% no space in linux buffers	
+%% 	{tx_dropped, uint64_t},		%% no space available in linux	
+%% 	{multicast, uint64_t},		%% multicast packets received	
+%% 	{collisions, uint64_t},
+%%
+%% 	%% detailed rx_errors: 
+%% 	{rx_length_errors, uint64_t},
+%% 	{rx_over_errors, uint64_t},		%% receiver ring buff overflow	
+%% 	{rx_crc_errors, uint64_t},		%% recved pkt with crc error	
+%% 	{rx_frame_errors, uint64_t},	%% recv'd frame alignment error 
+%% 	{rx_fifo_errors, uint64_t},		%% recv'r fifo overrun		
+%% 	{rx_missed_errors, uint64_t},	%% receiver missed packet	
+%%
+%% 	%% detailed tx_errors 
+%% 	{tx_aborted_errors, uint64_t},
+%% 	{tx_carrier_errors, uint64_t},
+%% 	{tx_fifo_errors, uint64_t},
+%% 	{tx_heartbeat_errors, uint64_t},
+%% 	{tx_window_errors, uint64_t},
+%%
+%% 	%% for cslip etc 
+%% 	{rx_compressed, uint64_t},
+%% 	{tx_compressed, uint64_t},
+%%
+%% 	{rx_nohandler, uint64_t}		%% dropped, no handler found	
+%% ]}.
+%%
+%% %% The struct should be in sync with struct ifmap 
+%% {record,rtnl_link_ifmap, [
+%% 	{mem_start, uint64_t},
+%% 	{mem_end, uint64_t},
+%% 	{base_addr, uint64_t},
+%% 	{ieq, uint16_t},
+%% 	{dma, uint8_t}
+%% 	{port, uint8_t}
+%% ]}.
+
 
 {attribute, rtnetlink_link, 
  [
@@ -830,7 +909,7 @@
   {mtu,         uint32_t},
   {link,        uint32_t},
   {qdisc,       string_t},
-  {stats,       {array,uint32_t}},
+  {stats,       {array,uint32_t}},  %% rtnl_link_stats
   {cost,        binary_t},
   {priority,    binary_t},
   {master,      binary_t},
@@ -846,10 +925,10 @@
   {ifalias,     string_t},
   {num_vf,      uint32_t},
   {vfinfo_list, binary_t},
-  {stats64,     {array,uint64_t}},
+  {stats64,     {array,uint64_t}},  %% rtnl_link_stats64
   {vf_ports,    binary_t},
   {port_self,   binary_t},
-  {af_spec,     binary_t},  %% FIXME tlvs of something...
+  {af_spec,     {tlvs,binary_t}},  %% what info?
   {group,       uint32_t},  %% Group the device belongs to
   {net_ns_fd,   uint32_t},
   {ext_mask,    binary_t},  %% Extended info mask, VFs, etc

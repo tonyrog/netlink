@@ -830,9 +830,9 @@ dec_ctnetlink({20,big,<<X/binary>>}) ->
   {timestamp,dec_ctnetlink_timestamp(netlink_codec:decode_tlv(X))};
 dec_ctnetlink({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink({tuple_orig,native,X}) ->
   {1,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_tuple(X)))>>};
 enc_ctnetlink({tuple_orig,big,X}) ->
@@ -854,9 +854,9 @@ enc_ctnetlink({help,native,X}) ->
 enc_ctnetlink({help,big,X}) ->
   {5,big,<<(netlink_codec:encode_tlv(enc_ctnetlink_help(X)))>>};
 enc_ctnetlink({nat_src,native,X}) ->
-  {6,native,<<X>>};
+  {6,native,<<X/binary>>};
 enc_ctnetlink({nat_src,big,X}) ->
-  {6,big,<<X>>};
+  {6,big,<<X/binary>>};
 enc_ctnetlink({timeout,native,X}) ->
   {7,native,<<X:32/unsigned-native>>};
 enc_ctnetlink({timeout,big,X}) ->
@@ -882,9 +882,9 @@ enc_ctnetlink({id,native,X}) ->
 enc_ctnetlink({id,big,X}) ->
   {12,big,<<X:32/unsigned-big>>};
 enc_ctnetlink({nat_dst,native,X}) ->
-  {13,native,<<X>>};
+  {13,native,<<X/binary>>};
 enc_ctnetlink({nat_dst,big,X}) ->
-  {13,big,<<X>>};
+  {13,big,<<X/binary>>};
 enc_ctnetlink({tuple_master,native,X}) ->
   {14,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_tuple(X)))>>};
 enc_ctnetlink({tuple_master,big,X}) ->
@@ -906,9 +906,9 @@ enc_ctnetlink({zone,native,X}) ->
 enc_ctnetlink({zone,big,X}) ->
   {18,big,<<X:16/unsigned-big>>};
 enc_ctnetlink({secctx,native,X}) ->
-  {19,native,<<X>>};
+  {19,native,<<X/binary>>};
 enc_ctnetlink({secctx,big,X}) ->
-  {19,big,<<X>>};
+  {19,big,<<X/binary>>};
 enc_ctnetlink({timestamp,native,X}) ->
   {20,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_timestamp(X)))>>};
 enc_ctnetlink({timestamp,big,X}) ->
@@ -936,9 +936,9 @@ dec_ctnetlink_counters({4,big,<<X:32/unsigned-big>>}) ->
   {bytes32,X};
 dec_ctnetlink_counters({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_counters({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_counters({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_counters({packets,native,X}) ->
   {1,native,<<X:64/unsigned-native>>};
 enc_ctnetlink_counters({packets,big,X}) ->
@@ -994,9 +994,9 @@ dec_ctnetlink_exp({8,big,<<Xf:32/unsigned-big>>}) ->
   {flags,netlink_codec:decode_flags(Xf,fun dec_ctnetlink_exp_flags/1)};
 dec_ctnetlink_exp({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_exp({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_exp({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_exp({master,native,X}) ->
   {1,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_exp_tuple(X)))>>};
 enc_ctnetlink_exp({master,big,X}) ->
@@ -1044,9 +1044,9 @@ dec_ctnetlink_exp_tuple({2,big,<<X/binary>>}) ->
   {proto,dec_ctnetlink_exp_tuple_proto(netlink_codec:decode_tlv(X))};
 dec_ctnetlink_exp_tuple({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_exp_tuple({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_exp_tuple({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_exp_tuple({ip,native,X}) ->
   {1,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_exp_tuple_ip(X)))>>};
 enc_ctnetlink_exp_tuple({ip,big,X}) ->
@@ -1078,9 +1078,9 @@ dec_ctnetlink_exp_tuple_ip({4,big,<<X1:16,X2:16,X3:16,X4:16,X5:16,X6:16,X7:16,X8
   {v6_dst,{X1,X2,X3,X4,X5,X6,X7,X8}};
 dec_ctnetlink_exp_tuple_ip({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_exp_tuple_ip({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_exp_tuple_ip({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_exp_tuple_ip({v4_src,native,{X1,X2,X3,X4}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8>>};
 enc_ctnetlink_exp_tuple_ip({v4_src,big,{X1,X2,X3,X4}}) ->
@@ -1140,9 +1140,9 @@ dec_ctnetlink_exp_tuple_proto({9,big,<<X/binary>>}) ->
   {icmpv6_code,X};
 dec_ctnetlink_exp_tuple_proto({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_exp_tuple_proto({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({num,native,X}) ->
   {1,native,<<(enc_protocol(X)):8/unsigned-native>>};
 enc_ctnetlink_exp_tuple_proto({num,big,X}) ->
@@ -1168,17 +1168,17 @@ enc_ctnetlink_exp_tuple_proto({icmp_code,native,X}) ->
 enc_ctnetlink_exp_tuple_proto({icmp_code,big,X}) ->
   {6,big,<<X:8/unsigned-big>>};
 enc_ctnetlink_exp_tuple_proto({icmpv6_id,native,X}) ->
-  {7,native,<<X>>};
+  {7,native,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({icmpv6_id,big,X}) ->
-  {7,big,<<X>>};
+  {7,big,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({icmpv6_type,native,X}) ->
-  {8,native,<<X>>};
+  {8,native,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({icmpv6_type,big,X}) ->
-  {8,big,<<X>>};
+  {8,big,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({icmpv6_code,native,X}) ->
-  {9,native,<<X>>};
+  {9,native,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({icmpv6_code,big,X}) ->
-  {9,big,<<X>>};
+  {9,big,<<X/binary>>};
 enc_ctnetlink_exp_tuple_proto({I,Endian,X}) -> {I,Endian,X}.
 dec_ctnetlink_help({0,native,<<X/binary>>}) ->
   {unspec,X};
@@ -1190,9 +1190,9 @@ dec_ctnetlink_help({1,big,<<X/binary>>}) ->
   {name,binary_to_list(hd(binary:split(X,<<0>>)))};
 dec_ctnetlink_help({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_help({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_help({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_help({name,native,X}) ->
   {1,native,<<(erlang:iolist_to_binary([X,0]))/binary>>};
 enc_ctnetlink_help({name,big,X}) ->
@@ -1216,9 +1216,9 @@ dec_ctnetlink_nat_seq_adj({3,big,<<X:32/unsigned-big>>}) ->
   {offset_after,X};
 dec_ctnetlink_nat_seq_adj({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_nat_seq_adj({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_nat_seq_adj({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_nat_seq_adj({correction_pos,native,X}) ->
   {1,native,<<X:32/unsigned-native>>};
 enc_ctnetlink_nat_seq_adj({correction_pos,big,X}) ->
@@ -1250,21 +1250,21 @@ dec_ctnetlink_protoinfo({3,big,<<X/binary>>}) ->
   {sctp,X};
 dec_ctnetlink_protoinfo({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_protoinfo({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_protoinfo({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_protoinfo({tcp,native,X}) ->
   {1,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_protoinfo_tcp(X)))>>};
 enc_ctnetlink_protoinfo({tcp,big,X}) ->
   {1,big,<<(netlink_codec:encode_tlv(enc_ctnetlink_protoinfo_tcp(X)))>>};
 enc_ctnetlink_protoinfo({dccp,native,X}) ->
-  {2,native,<<X>>};
+  {2,native,<<X/binary>>};
 enc_ctnetlink_protoinfo({dccp,big,X}) ->
-  {2,big,<<X>>};
+  {2,big,<<X/binary>>};
 enc_ctnetlink_protoinfo({sctp,native,X}) ->
-  {3,native,<<X>>};
+  {3,native,<<X/binary>>};
 enc_ctnetlink_protoinfo({sctp,big,X}) ->
-  {3,big,<<X>>};
+  {3,big,<<X/binary>>};
 enc_ctnetlink_protoinfo({I,Endian,X}) -> {I,Endian,X}.
 dec_ctnetlink_protoinfo_tcp({0,native,<<X/binary>>}) ->
   {unspec,X};
@@ -1292,9 +1292,9 @@ dec_ctnetlink_protoinfo_tcp({5,big,<<X:16/unsigned-big>>}) ->
   {flags_reply,X};
 dec_ctnetlink_protoinfo_tcp({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_protoinfo_tcp({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_protoinfo_tcp({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_protoinfo_tcp({state,native,X}) ->
   {1,native,<<(enc_ctnetlink_protoinfo_tcp_state(X)):8/unsigned-native>>};
 enc_ctnetlink_protoinfo_tcp({state,big,X}) ->
@@ -1330,9 +1330,9 @@ dec_ctnetlink_timestamp({2,big,<<X:64/unsigned-big>>}) ->
   {stop,X};
 dec_ctnetlink_timestamp({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_timestamp({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_timestamp({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_timestamp({start,native,X}) ->
   {1,native,<<X:64/unsigned-native>>};
 enc_ctnetlink_timestamp({start,big,X}) ->
@@ -1356,9 +1356,9 @@ dec_ctnetlink_tuple({2,big,<<X/binary>>}) ->
   {proto,dec_ctnetlink_tuple_proto(netlink_codec:decode_tlv(X))};
 dec_ctnetlink_tuple({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_tuple({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_tuple({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_tuple({ip,native,X}) ->
   {1,native,<<(netlink_codec:encode_tlv(enc_ctnetlink_tuple_ip(X)))>>};
 enc_ctnetlink_tuple({ip,big,X}) ->
@@ -1390,9 +1390,9 @@ dec_ctnetlink_tuple_ip({4,big,<<X1:16,X2:16,X3:16,X4:16,X5:16,X6:16,X7:16,X8:16>
   {v6_dst,{X1,X2,X3,X4,X5,X6,X7,X8}};
 dec_ctnetlink_tuple_ip({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_tuple_ip({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_tuple_ip({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_tuple_ip({v4_src,native,{X1,X2,X3,X4}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8>>};
 enc_ctnetlink_tuple_ip({v4_src,big,{X1,X2,X3,X4}}) ->
@@ -1452,9 +1452,9 @@ dec_ctnetlink_tuple_proto({9,big,<<X/binary>>}) ->
   {icmpv6_code,X};
 dec_ctnetlink_tuple_proto({I,_Endian,Bin}) -> {I,Bin}.
 enc_ctnetlink_tuple_proto({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_ctnetlink_tuple_proto({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_ctnetlink_tuple_proto({num,native,X}) ->
   {1,native,<<(enc_protocol(X)):8/unsigned-native>>};
 enc_ctnetlink_tuple_proto({num,big,X}) ->
@@ -1480,17 +1480,17 @@ enc_ctnetlink_tuple_proto({icmp_code,native,X}) ->
 enc_ctnetlink_tuple_proto({icmp_code,big,X}) ->
   {6,big,<<X:8/unsigned-big>>};
 enc_ctnetlink_tuple_proto({icmpv6_id,native,X}) ->
-  {7,native,<<X>>};
+  {7,native,<<X/binary>>};
 enc_ctnetlink_tuple_proto({icmpv6_id,big,X}) ->
-  {7,big,<<X>>};
+  {7,big,<<X/binary>>};
 enc_ctnetlink_tuple_proto({icmpv6_type,native,X}) ->
-  {8,native,<<X>>};
+  {8,native,<<X/binary>>};
 enc_ctnetlink_tuple_proto({icmpv6_type,big,X}) ->
-  {8,big,<<X>>};
+  {8,big,<<X/binary>>};
 enc_ctnetlink_tuple_proto({icmpv6_code,native,X}) ->
-  {9,native,<<X>>};
+  {9,native,<<X/binary>>};
 enc_ctnetlink_tuple_proto({icmpv6_code,big,X}) ->
-  {9,big,<<X>>};
+  {9,big,<<X/binary>>};
 enc_ctnetlink_tuple_proto({I,Endian,X}) -> {I,Endian,X}.
 dec_rtnetlink_addr({0,native,<<X/binary>>}) ->
   {unspec,X};
@@ -1546,9 +1546,9 @@ dec_rtnetlink_addr({7,big,<<X1:16,X2:16,X3:16,X4:16,X5:16,X6:16,X7:16,X8:16>>}) 
   {multicast,{X1,X2,X3,X4,X5,X6,X7,X8}};
 dec_rtnetlink_addr({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_addr({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_addr({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_addr({address,native,{X1,X2,X3,X4}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8>>};
 enc_rtnetlink_addr({address,big,{X1,X2,X3,X4}}) ->
@@ -1654,10 +1654,10 @@ dec_rtnetlink_link({13,native,<<X:32/unsigned-native>>}) ->
   {txqlen,X};
 dec_rtnetlink_link({13,big,<<X:32/unsigned-big>>}) ->
   {txqlen,X};
-dec_rtnetlink_link({14,native,<<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native,X7:32/unsigned-native>>}) ->
-  {map,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6,pad=X7}};
-dec_rtnetlink_link({14,big,<<X1:64/unsigned-big,X2:64/unsigned-big,X3:64/unsigned-big,X4:16/unsigned-big,X5:8/unsigned-big,X6:8/unsigned-big,X7:32/unsigned-big>>}) ->
-  {map,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6,pad=X7}};
+dec_rtnetlink_link({14,native,<<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native,_/binary>>}) ->
+  {map,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6}};
+dec_rtnetlink_link({14,big,<<X1:64/unsigned-big,X2:64/unsigned-big,X3:64/unsigned-big,X4:16/unsigned-big,X5:8/unsigned-big,X6:8/unsigned-big,_/binary>>}) ->
+  {map,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6}};
 dec_rtnetlink_link({15,native,<<X/binary>>}) ->
   {weight,X};
 dec_rtnetlink_link({15,big,<<X/binary>>}) ->
@@ -1703,9 +1703,9 @@ dec_rtnetlink_link({25,native,<<X/binary>>}) ->
 dec_rtnetlink_link({25,big,<<X/binary>>}) ->
   {port_self,X};
 dec_rtnetlink_link({26,native,<<X/binary>>}) ->
-  {af_spec,X};
+  {af_spec,[fun(B) -> B end(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]};
 dec_rtnetlink_link({26,big,<<X/binary>>}) ->
-  {af_spec,X};
+  {af_spec,[fun(B) -> B end(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]};
 dec_rtnetlink_link({27,native,<<X:32/unsigned-native>>}) ->
   {group,X};
 dec_rtnetlink_link({27,big,<<X:32/unsigned-big>>}) ->
@@ -1808,9 +1808,9 @@ dec_rtnetlink_link({51,big,<<X:32/unsigned-big>>}) ->
   {max_mtu,X};
 dec_rtnetlink_link({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_link({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_link({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_link({address,native,{X1,X2,X3,X4,X5,X6}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8,X5:8,X6:8>>};
 enc_rtnetlink_link({address,big,{X1,X2,X3,X4,X5,X6}}) ->
@@ -1840,21 +1840,21 @@ enc_rtnetlink_link({stats,native,X}) ->
 enc_rtnetlink_link({stats,big,X}) ->
   {7,big,<<(<< <<Xi:32/unsigned-big>> || Xi <- X>>)/binary>>};
 enc_rtnetlink_link({cost,native,X}) ->
-  {8,native,<<X>>};
+  {8,native,<<X/binary>>};
 enc_rtnetlink_link({cost,big,X}) ->
-  {8,big,<<X>>};
+  {8,big,<<X/binary>>};
 enc_rtnetlink_link({priority,native,X}) ->
-  {9,native,<<X>>};
+  {9,native,<<X/binary>>};
 enc_rtnetlink_link({priority,big,X}) ->
-  {9,big,<<X>>};
+  {9,big,<<X/binary>>};
 enc_rtnetlink_link({master,native,X}) ->
-  {10,native,<<X>>};
+  {10,native,<<X/binary>>};
 enc_rtnetlink_link({master,big,X}) ->
-  {10,big,<<X>>};
+  {10,big,<<X/binary>>};
 enc_rtnetlink_link({wireless,native,X}) ->
-  {11,native,<<X>>};
+  {11,native,<<X/binary>>};
 enc_rtnetlink_link({wireless,big,X}) ->
-  {11,big,<<X>>};
+  {11,big,<<X/binary>>};
 enc_rtnetlink_link({protinfo,native,X}) ->
   {12,native,<<(netlink_codec:encode_tlv_list([enc_rtnetlink_link_protinfo(Xi) || Xi <- X]))/binary>>};
 enc_rtnetlink_link({protinfo,big,X}) ->
@@ -1863,14 +1863,14 @@ enc_rtnetlink_link({txqlen,native,X}) ->
   {13,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({txqlen,big,X}) ->
   {13,big,<<X:32/unsigned-big>>};
-enc_rtnetlink_link({map,native,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6,pad=X7}}) ->
-  {14,native,<<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native,X7:32/unsigned-native>>};
-enc_rtnetlink_link({map,big,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6,pad=X7}}) ->
-  {14,big,<<X1:64/unsigned-big,X2:64/unsigned-big,X3:64/unsigned-big,X4:16/unsigned-big,X5:8/unsigned-big,X6:8/unsigned-big,X7:32/unsigned-big>>};
+enc_rtnetlink_link({map,native,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6}}) ->
+  {14,native,<<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native>>};
+enc_rtnetlink_link({map,big,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6}}) ->
+  {14,big,<<X1:64/unsigned-big,X2:64/unsigned-big,X3:64/unsigned-big,X4:16/unsigned-big,X5:8/unsigned-big,X6:8/unsigned-big>>};
 enc_rtnetlink_link({weight,native,X}) ->
-  {15,native,<<X>>};
+  {15,native,<<X/binary>>};
 enc_rtnetlink_link({weight,big,X}) ->
-  {15,big,<<X>>};
+  {15,big,<<X/binary>>};
 enc_rtnetlink_link({operstate,native,X}) ->
   {16,native,<<(enc_rtnetlink_link_operstate(X)):8/unsigned-native>>};
 enc_rtnetlink_link({operstate,big,X}) ->
@@ -1896,25 +1896,25 @@ enc_rtnetlink_link({num_vf,native,X}) ->
 enc_rtnetlink_link({num_vf,big,X}) ->
   {21,big,<<X:32/unsigned-big>>};
 enc_rtnetlink_link({vfinfo_list,native,X}) ->
-  {22,native,<<X>>};
+  {22,native,<<X/binary>>};
 enc_rtnetlink_link({vfinfo_list,big,X}) ->
-  {22,big,<<X>>};
+  {22,big,<<X/binary>>};
 enc_rtnetlink_link({stats64,native,X}) ->
   {23,native,<<(<< <<Xi:64/unsigned-native>> || Xi <- X>>)/binary>>};
 enc_rtnetlink_link({stats64,big,X}) ->
   {23,big,<<(<< <<Xi:64/unsigned-big>> || Xi <- X>>)/binary>>};
 enc_rtnetlink_link({vf_ports,native,X}) ->
-  {24,native,<<X>>};
+  {24,native,<<X/binary>>};
 enc_rtnetlink_link({vf_ports,big,X}) ->
-  {24,big,<<X>>};
+  {24,big,<<X/binary>>};
 enc_rtnetlink_link({port_self,native,X}) ->
-  {25,native,<<X>>};
+  {25,native,<<X/binary>>};
 enc_rtnetlink_link({port_self,big,X}) ->
-  {25,big,<<X>>};
+  {25,big,<<X/binary>>};
 enc_rtnetlink_link({af_spec,native,X}) ->
-  {26,native,<<X>>};
+  {26,native,<<(netlink_codec:encode_tlv_list([fun (B) -> B end(Xi) || Xi <- X]))/binary>>};
 enc_rtnetlink_link({af_spec,big,X}) ->
-  {26,big,<<X>>};
+  {26,big,<<(netlink_codec:encode_tlv_list([fun (B) -> B end(Xi) || Xi <- X]))/binary>>};
 enc_rtnetlink_link({group,native,X}) ->
   {27,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({group,big,X}) ->
@@ -1924,9 +1924,9 @@ enc_rtnetlink_link({net_ns_fd,native,X}) ->
 enc_rtnetlink_link({net_ns_fd,big,X}) ->
   {28,big,<<X:32/unsigned-big>>};
 enc_rtnetlink_link({ext_mask,native,X}) ->
-  {29,native,<<X>>};
+  {29,native,<<X/binary>>};
 enc_rtnetlink_link({ext_mask,big,X}) ->
-  {29,big,<<X>>};
+  {29,big,<<X/binary>>};
 enc_rtnetlink_link({promiscuity,native,X}) ->
   {30,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({promiscuity,big,X}) ->
@@ -1944,29 +1944,29 @@ enc_rtnetlink_link({carrier,native,X}) ->
 enc_rtnetlink_link({carrier,big,X}) ->
   {33,big,<<X:8/unsigned-big>>};
 enc_rtnetlink_link({phys_port_id,native,X}) ->
-  {34,native,<<X>>};
+  {34,native,<<X/binary>>};
 enc_rtnetlink_link({phys_port_id,big,X}) ->
-  {34,big,<<X>>};
+  {34,big,<<X/binary>>};
 enc_rtnetlink_link({carrier_changes,native,X}) ->
   {35,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({carrier_changes,big,X}) ->
   {35,big,<<X:32/unsigned-big>>};
 enc_rtnetlink_link({phys_switch_id,native,X}) ->
-  {36,native,<<X>>};
+  {36,native,<<X/binary>>};
 enc_rtnetlink_link({phys_switch_id,big,X}) ->
-  {36,big,<<X>>};
+  {36,big,<<X/binary>>};
 enc_rtnetlink_link({link_netnsid,native,X}) ->
-  {37,native,<<X>>};
+  {37,native,<<X/binary>>};
 enc_rtnetlink_link({link_netnsid,big,X}) ->
-  {37,big,<<X>>};
+  {37,big,<<X/binary>>};
 enc_rtnetlink_link({phys_port_name,native,X}) ->
-  {38,native,<<X>>};
+  {38,native,<<X/binary>>};
 enc_rtnetlink_link({phys_port_name,big,X}) ->
-  {38,big,<<X>>};
+  {38,big,<<X/binary>>};
 enc_rtnetlink_link({proto_down,native,X}) ->
-  {39,native,<<X>>};
+  {39,native,<<X/binary>>};
 enc_rtnetlink_link({proto_down,big,X}) ->
-  {39,big,<<X>>};
+  {39,big,<<X/binary>>};
 enc_rtnetlink_link({gso_max_segs,native,X}) ->
   {40,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({gso_max_segs,big,X}) ->
@@ -1976,25 +1976,25 @@ enc_rtnetlink_link({gso_max_size,native,X}) ->
 enc_rtnetlink_link({gso_max_size,big,X}) ->
   {41,big,<<X:32/unsigned-big>>};
 enc_rtnetlink_link({pad,native,X}) ->
-  {42,native,<<X>>};
+  {42,native,<<X/binary>>};
 enc_rtnetlink_link({pad,big,X}) ->
-  {42,big,<<X>>};
+  {42,big,<<X/binary>>};
 enc_rtnetlink_link({xdp,native,X}) ->
-  {43,native,<<X>>};
+  {43,native,<<X/binary>>};
 enc_rtnetlink_link({xdp,big,X}) ->
-  {43,big,<<X>>};
+  {43,big,<<X/binary>>};
 enc_rtnetlink_link({event,native,X}) ->
-  {44,native,<<X>>};
+  {44,native,<<X/binary>>};
 enc_rtnetlink_link({event,big,X}) ->
-  {44,big,<<X>>};
+  {44,big,<<X/binary>>};
 enc_rtnetlink_link({new_netnsid,native,X}) ->
-  {45,native,<<X>>};
+  {45,native,<<X/binary>>};
 enc_rtnetlink_link({new_netnsid,big,X}) ->
-  {45,big,<<X>>};
+  {45,big,<<X/binary>>};
 enc_rtnetlink_link({target_netnsid,native,X}) ->
-  {46,native,<<X>>};
+  {46,native,<<X/binary>>};
 enc_rtnetlink_link({target_netnsid,big,X}) ->
-  {46,big,<<X>>};
+  {46,big,<<X/binary>>};
 enc_rtnetlink_link({carrier_up_count,native,X}) ->
   {47,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({carrier_up_count,big,X}) ->
@@ -2004,9 +2004,9 @@ enc_rtnetlink_link({carrier_down_count,native,X}) ->
 enc_rtnetlink_link({carrier_down_count,big,X}) ->
   {48,big,<<X:32/unsigned-big>>};
 enc_rtnetlink_link({new_ifindex,native,X}) ->
-  {49,native,<<X>>};
+  {49,native,<<X/binary>>};
 enc_rtnetlink_link({new_ifindex,big,X}) ->
-  {49,big,<<X>>};
+  {49,big,<<X/binary>>};
 enc_rtnetlink_link({min_mtu,native,X}) ->
   {50,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_link({min_mtu,big,X}) ->
@@ -2034,21 +2034,21 @@ dec_rtnetlink_link_linkinfo({3,big,<<X/binary>>}) ->
   {xstats,X};
 dec_rtnetlink_link_linkinfo({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_link_linkinfo({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_link_linkinfo({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_link_linkinfo({kind,native,X}) ->
   {1,native,<<(erlang:iolist_to_binary([X,0]))/binary>>};
 enc_rtnetlink_link_linkinfo({kind,big,X}) ->
   {1,big,<<(erlang:iolist_to_binary([X,0]))/binary>>};
 enc_rtnetlink_link_linkinfo({data,native,X}) ->
-  {2,native,<<X>>};
+  {2,native,<<X/binary>>};
 enc_rtnetlink_link_linkinfo({data,big,X}) ->
-  {2,big,<<X>>};
+  {2,big,<<X/binary>>};
 enc_rtnetlink_link_linkinfo({xstats,native,X}) ->
-  {3,native,<<X>>};
+  {3,native,<<X/binary>>};
 enc_rtnetlink_link_linkinfo({xstats,big,X}) ->
-  {3,big,<<X>>};
+  {3,big,<<X/binary>>};
 enc_rtnetlink_link_linkinfo({I,Endian,X}) -> {I,Endian,X}.
 dec_rtnetlink_link_protinfo({0,native,<<X/binary>>}) ->
   {unspec,X};
@@ -2080,9 +2080,9 @@ dec_rtnetlink_link_protinfo({6,big,<<X/binary>>}) ->
   {icmp6stats,[Xi || <<Xi:64/unsigned-big>> <= X]};
 dec_rtnetlink_link_protinfo({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_link_protinfo({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_link_protinfo({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_link_protinfo({flags,native,X}) ->
   {1,native,<<(netlink_codec:encode_flags(X,fun enc_rtnetlink_link_protinfo_flags/1)):32/unsigned-native>>};
 enc_rtnetlink_link_protinfo({flags,big,X}) ->
@@ -2096,9 +2096,9 @@ enc_rtnetlink_link_protinfo({stats,native,X}) ->
 enc_rtnetlink_link_protinfo({stats,big,X}) ->
   {3,big,<<(<< <<Xi:64/unsigned-big>> || Xi <- X>>)/binary>>};
 enc_rtnetlink_link_protinfo({mcast,native,X}) ->
-  {4,native,<<X>>};
+  {4,native,<<X/binary>>};
 enc_rtnetlink_link_protinfo({mcast,big,X}) ->
-  {4,big,<<X>>};
+  {4,big,<<X/binary>>};
 enc_rtnetlink_link_protinfo({cacheinfo,native,X}) ->
   {5,native,<<(<< <<Xi:32/unsigned-native>> || Xi <- X>>)/binary>>};
 enc_rtnetlink_link_protinfo({cacheinfo,big,X}) ->
@@ -2134,9 +2134,9 @@ dec_rtnetlink_neigh({4,big,<<X:32/unsigned-big>>}) ->
   {probes,X};
 dec_rtnetlink_neigh({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_neigh({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_neigh({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_neigh({dst,native,{X1,X2,X3,X4}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8>>};
 enc_rtnetlink_neigh({dst,big,{X1,X2,X3,X4}}) ->
@@ -2176,9 +2176,9 @@ dec_rtnetlink_prefix({2,big,<<X/binary>>}) ->
   {cacheinfo,[Xi || <<Xi:32/unsigned-big>> <= X]};
 dec_rtnetlink_prefix({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_prefix({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_prefix({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_prefix({address,native,{X1,X2,X3,X4}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8>>};
 enc_rtnetlink_prefix({address,big,{X1,X2,X3,X4}}) ->
@@ -2274,9 +2274,9 @@ dec_rtnetlink_route({15,big,<<X:32/unsigned-big>>}) ->
   {table,X};
 dec_rtnetlink_route({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_route({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_route({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_route({dst,native,{X1,X2,X3,X4}}) ->
   {1,native,<<X1:8,X2:8,X3:8,X4:8>>};
 enc_rtnetlink_route({dst,big,{X1,X2,X3,X4}}) ->
@@ -2326,13 +2326,13 @@ enc_rtnetlink_route({metrics,native,X}) ->
 enc_rtnetlink_route({metrics,big,X}) ->
   {8,big,<<(netlink_codec:encode_tlv_list([enc_rtnetlink_route_metrics(Xi) || Xi <- X]))/binary>>};
 enc_rtnetlink_route({multipath,native,X}) ->
-  {9,native,<<X>>};
+  {9,native,<<X/binary>>};
 enc_rtnetlink_route({multipath,big,X}) ->
-  {9,big,<<X>>};
+  {9,big,<<X/binary>>};
 enc_rtnetlink_route({protoinfo,native,X}) ->
-  {10,native,<<X>>};
+  {10,native,<<X/binary>>};
 enc_rtnetlink_route({protoinfo,big,X}) ->
-  {10,big,<<X>>};
+  {10,big,<<X/binary>>};
 enc_rtnetlink_route({flow,native,X}) ->
   {11,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_route({flow,big,X}) ->
@@ -2342,13 +2342,13 @@ enc_rtnetlink_route({cacheinfo,native,X}) ->
 enc_rtnetlink_route({cacheinfo,big,X}) ->
   {12,big,<<(<< <<Xi:32/unsigned-big>> || Xi <- X>>)/binary>>};
 enc_rtnetlink_route({session,native,X}) ->
-  {13,native,<<X>>};
+  {13,native,<<X/binary>>};
 enc_rtnetlink_route({session,big,X}) ->
-  {13,big,<<X>>};
+  {13,big,<<X/binary>>};
 enc_rtnetlink_route({mp_algo,native,X}) ->
-  {14,native,<<X>>};
+  {14,native,<<X/binary>>};
 enc_rtnetlink_route({mp_algo,big,X}) ->
-  {14,big,<<X>>};
+  {14,big,<<X/binary>>};
 enc_rtnetlink_route({table,native,X}) ->
   {15,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_route({table,big,X}) ->
@@ -2416,9 +2416,9 @@ dec_rtnetlink_route_metrics({14,big,<<X:32/unsigned-big>>}) ->
   {initrwnd,X};
 dec_rtnetlink_route_metrics({I,_Endian,Bin}) -> {I,Bin}.
 enc_rtnetlink_route_metrics({unspec,native,X}) ->
-  {0,native,<<X>>};
+  {0,native,<<X/binary>>};
 enc_rtnetlink_route_metrics({unspec,big,X}) ->
-  {0,big,<<X>>};
+  {0,big,<<X/binary>>};
 enc_rtnetlink_route_metrics({lock,native,X}) ->
   {1,native,<<X:32/unsigned-native>>};
 enc_rtnetlink_route_metrics({lock,big,X}) ->
@@ -2476,69 +2476,69 @@ enc_rtnetlink_route_metrics({initrwnd,native,X}) ->
 enc_rtnetlink_route_metrics({initrwnd,big,X}) ->
   {14,big,<<X:32/unsigned-big>>};
 enc_rtnetlink_route_metrics({I,Endian,X}) -> {I,Endian,X}.
-dec_deladdr({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X6/binary>>}) ->
-   #deladdr{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(X6i) || X6i <- netlink_codec:decode_tlv_list(X6)]}.
+dec_deladdr({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X/binary>>}) ->
+   #deladdr{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_deladdr({_Endian,#deladdr{family=X1,prefixlen=X2,flags=X3,scope=X4,index=X5,attributes=X6}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,(netlink_codec:encode_flags(X3,fun enc_ifa_flags/1)):8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_addr(X6i) || X6i <- X6]))/binary>>.
-dec_dellink({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X7/binary>>}) ->
-   #dellink{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(X7i) || X7i <- netlink_codec:decode_tlv_list(X7)]}.
+dec_dellink({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X/binary>>}) ->
+   #dellink{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_dellink({_Endian,#dellink{family=X1,arphrd=X3,index=X4,flags=X5,change=X6,attributes=X7}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,(enc_arphrd(X3)):16/unsigned-native,X4:32/signed-native,(netlink_codec:encode_flags(X5,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_flags(X6,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_link(X7i) || X7i <- X7]))/binary>>.
-dec_delneigh({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X8/binary>>}) ->
-   #delneigh{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(X8i) || X8i <- netlink_codec:decode_tlv_list(X8)]}.
+dec_delneigh({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X/binary>>}) ->
+   #delneigh{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_delneigh({_Endian,#delneigh{family=X1,index=X4,state=X5,flags=X6,nmd_type=X7,attributes=X8}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,0:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_neigh(X8i) || X8i <- X8]))/binary>>.
-dec_delroute({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X10/binary>>}) ->
-   #delroute{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(X10i) || X10i <- netlink_codec:decode_tlv_list(X10)]}.
+dec_delroute({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X/binary>>}) ->
+   #delroute{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_delroute({_Endian,#delroute{family=X1,dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=X6,scope=X7,rtm_type=X8,flags=X9,attributes=X10}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,(enc_protocol(X6)):8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_route(X10i) || X10i <- X10]))/binary>>.
-dec_done({native,<<X1:32/unsigned-native>>}) ->
+dec_done({native,<<X1:32/unsigned-native,_/binary>>}) ->
    #done{status=X1}.
 enc_done({_Endian,#done{status=X1}}) -> <<X1:32/unsigned-native>>.
 dec_error({native,<<X1:32/signed-native,X21:32/unsigned-native,X22:16/unsigned-native,X23:16/unsigned-native,X24:32/unsigned-native,X25:32/unsigned-native,X3/binary>>}) ->
    #error{errno=X1,msg=#nlmsghdr{len=X21,type=X22,flags=X23,seq=X24,pid=X25},data=X3}.
-enc_error({_Endian,#error{errno=X1,msg=#nlmsghdr{len=X21,type=X22,flags=X23,seq=X24,pid=X25},data=X3}}) -> <<X1:32/signed-native,X21:32/unsigned-native,X22:16/unsigned-native,X23:16/unsigned-native,X24:32/unsigned-native,X25:32/unsigned-native,X3>>.
-dec_getaddr({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X6/binary>>}) ->
-   #getaddr{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(X6i) || X6i <- netlink_codec:decode_tlv_list(X6)]}.
+enc_error({_Endian,#error{errno=X1,msg=#nlmsghdr{len=X21,type=X22,flags=X23,seq=X24,pid=X25},data=X3}}) -> <<X1:32/signed-native,X21:32/unsigned-native,X22:16/unsigned-native,X23:16/unsigned-native,X24:32/unsigned-native,X25:32/unsigned-native,X3/binary>>.
+dec_getaddr({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X/binary>>}) ->
+   #getaddr{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_getaddr({_Endian,#getaddr{family=X1,prefixlen=X2,flags=X3,scope=X4,index=X5,attributes=X6}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,(netlink_codec:encode_flags(X3,fun enc_ifa_flags/1)):8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_addr(X6i) || X6i <- X6]))/binary>>.
-dec_getlink({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X7/binary>>}) ->
-   #getlink{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(X7i) || X7i <- netlink_codec:decode_tlv_list(X7)]}.
+dec_getlink({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X/binary>>}) ->
+   #getlink{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_getlink({_Endian,#getlink{family=X1,arphrd=X3,index=X4,flags=X5,change=X6,attributes=X7}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,(enc_arphrd(X3)):16/unsigned-native,X4:32/signed-native,(netlink_codec:encode_flags(X5,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_flags(X6,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_link(X7i) || X7i <- X7]))/binary>>.
-dec_getneigh({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X8/binary>>}) ->
-   #getneigh{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(X8i) || X8i <- netlink_codec:decode_tlv_list(X8)]}.
+dec_getneigh({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X/binary>>}) ->
+   #getneigh{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_getneigh({_Endian,#getneigh{family=X1,index=X4,state=X5,flags=X6,nmd_type=X7,attributes=X8}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,0:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_neigh(X8i) || X8i <- X8]))/binary>>.
-dec_getroute({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X10/binary>>}) ->
-   #getroute{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(X10i) || X10i <- netlink_codec:decode_tlv_list(X10)]}.
+dec_getroute({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X/binary>>}) ->
+   #getroute{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_getroute({_Endian,#getroute{family=X1,dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=X6,scope=X7,rtm_type=X8,flags=X9,attributes=X10}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,(enc_protocol(X6)):8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_route(X10i) || X10i <- X10]))/binary>>.
-dec_if_map({native,<<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native,X7:32/unsigned-native>>}) ->
-   #if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6,pad=X7}.
-enc_if_map({_Endian,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6,pad=X7}}) -> <<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native,X7:32/unsigned-native>>.
-dec_ifaddrmsg({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X6/binary>>}) ->
-   #ifaddrmsg{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(X6i) || X6i <- netlink_codec:decode_tlv_list(X6)]}.
+dec_if_map({native,<<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native,_/binary>>}) ->
+   #if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6}.
+enc_if_map({_Endian,#if_map{memstart=X1,memend=X2,baseaddr=X3,irq=X4,dma=X5,port=X6}}) -> <<X1:64/unsigned-native,X2:64/unsigned-native,X3:64/unsigned-native,X4:16/unsigned-native,X5:8/unsigned-native,X6:8/unsigned-native>>.
+dec_ifaddrmsg({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X/binary>>}) ->
+   #ifaddrmsg{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_ifaddrmsg({_Endian,#ifaddrmsg{family=X1,prefixlen=X2,flags=X3,scope=X4,index=X5,attributes=X6}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,(netlink_codec:encode_flags(X3,fun enc_ifa_flags/1)):8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_addr(X6i) || X6i <- X6]))/binary>>.
-dec_ifinfomsg({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X7/binary>>}) ->
-   #ifinfomsg{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(X7i) || X7i <- netlink_codec:decode_tlv_list(X7)]}.
+dec_ifinfomsg({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X/binary>>}) ->
+   #ifinfomsg{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_ifinfomsg({_Endian,#ifinfomsg{family=X1,arphrd=X3,index=X4,flags=X5,change=X6,attributes=X7}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,(enc_arphrd(X3)):16/unsigned-native,X4:32/signed-native,(netlink_codec:encode_flags(X5,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_flags(X6,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_link(X7i) || X7i <- X7]))/binary>>.
-dec_ndmsg({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X8/binary>>}) ->
-   #ndmsg{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(X8i) || X8i <- netlink_codec:decode_tlv_list(X8)]}.
+dec_ndmsg({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X/binary>>}) ->
+   #ndmsg{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_ndmsg({_Endian,#ndmsg{family=X1,index=X4,state=X5,flags=X6,nmd_type=X7,attributes=X8}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,0:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_neigh(X8i) || X8i <- X8]))/binary>>.
-dec_newaddr({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X6/binary>>}) ->
-   #newaddr{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(X6i) || X6i <- netlink_codec:decode_tlv_list(X6)]}.
+dec_newaddr({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3f:8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,X/binary>>}) ->
+   #newaddr{family=dec_family(X1e),prefixlen=X2,flags=netlink_codec:decode_flags(X3f,fun dec_ifa_flags/1),scope=X4,index=X5,attributes=[dec_rtnetlink_addr(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_newaddr({_Endian,#newaddr{family=X1,prefixlen=X2,flags=X3,scope=X4,index=X5,attributes=X6}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,(netlink_codec:encode_flags(X3,fun enc_ifa_flags/1)):8/unsigned-native,X4:8/unsigned-native,X5:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_addr(X6i) || X6i <- X6]))/binary>>.
-dec_newlink({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X7/binary>>}) ->
-   #newlink{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(X7i) || X7i <- netlink_codec:decode_tlv_list(X7)]}.
+dec_newlink({native,<<X1e:8/unsigned-native,_:8/unsigned-native,X3e:16/unsigned-native,X4:32/signed-native,X5f:32/unsigned-native,X6f:32/unsigned-native,X/binary>>}) ->
+   #newlink{family=dec_family(X1e),arphrd=dec_arphrd(X3e),index=X4,flags=netlink_codec:decode_flags(X5f,fun dec_iff_flags/1),change=netlink_codec:decode_flags(X6f,fun dec_iff_flags/1),attributes=[dec_rtnetlink_link(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_newlink({_Endian,#newlink{family=X1,arphrd=X3,index=X4,flags=X5,change=X6,attributes=X7}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,(enc_arphrd(X3)):16/unsigned-native,X4:32/signed-native,(netlink_codec:encode_flags(X5,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_flags(X6,fun enc_iff_flags/1)):32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_link(X7i) || X7i <- X7]))/binary>>.
-dec_newneigh({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X8/binary>>}) ->
-   #newneigh{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(X8i) || X8i <- netlink_codec:decode_tlv_list(X8)]}.
+dec_newneigh({native,<<X1e:8/unsigned-native,_:8/unsigned-native,_:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,X/binary>>}) ->
+   #newneigh{family=dec_family(X1e),index=X4,state=X5,flags=X6,nmd_type=X7,attributes=[dec_rtnetlink_neigh(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_newneigh({_Endian,#newneigh{family=X1,index=X4,state=X5,flags=X6,nmd_type=X7,attributes=X8}}) -> <<(enc_family(X1)):8/unsigned-native,0:8/unsigned-native,0:16/unsigned-native,X4:32/unsigned-native,X5:16/unsigned-native,X6:8/unsigned-native,X7:8/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_neigh(X8i) || X8i <- X8]))/binary>>.
-dec_newroute({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X10/binary>>}) ->
-   #newroute{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(X10i) || X10i <- netlink_codec:decode_tlv_list(X10)]}.
+dec_newroute({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X/binary>>}) ->
+   #newroute{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_newroute({_Endian,#newroute{family=X1,dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=X6,scope=X7,rtm_type=X8,flags=X9,attributes=X10}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,(enc_protocol(X6)):8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_route(X10i) || X10i <- X10]))/binary>>.
-dec_nlmsghdr({native,<<X1:32/unsigned-native,X2:16/unsigned-native,X3:16/unsigned-native,X4:32/unsigned-native,X5:32/unsigned-native>>}) ->
+dec_nlmsghdr({native,<<X1:32/unsigned-native,X2:16/unsigned-native,X3:16/unsigned-native,X4:32/unsigned-native,X5:32/unsigned-native,_/binary>>}) ->
    #nlmsghdr{len=X1,type=X2,flags=X3,seq=X4,pid=X5}.
 enc_nlmsghdr({_Endian,#nlmsghdr{len=X1,type=X2,flags=X3,seq=X4,pid=X5}}) -> <<X1:32/unsigned-native,X2:16/unsigned-native,X3:16/unsigned-native,X4:32/unsigned-native,X5:32/unsigned-native>>.
-dec_noop({native,<<>>}) ->
+dec_noop({native,<<_/binary>>}) ->
    #noop{}.
 enc_noop({_Endian,#noop{}}) -> <<>>.
-dec_overrun({native,<<X1:32/unsigned-native>>}) ->
+dec_overrun({native,<<X1:32/unsigned-native,_/binary>>}) ->
    #overrun{status=X1}.
 enc_overrun({_Endian,#overrun{status=X1}}) -> <<X1:32/unsigned-native>>.
-dec_rtmsg({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X10/binary>>}) ->
-   #rtmsg{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(X10i) || X10i <- netlink_codec:decode_tlv_list(X10)]}.
+dec_rtmsg({native,<<X1e:8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,X6e:8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,X/binary>>}) ->
+   #rtmsg{family=dec_family(X1e),dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=dec_protocol(X6e),scope=X7,rtm_type=X8,flags=X9,attributes=[dec_rtnetlink_route(Xi) || Xi <- netlink_codec:decode_tlv_list(X)]}.
 enc_rtmsg({_Endian,#rtmsg{family=X1,dstlen=X2,srclen=X3,tos=X4,table=X5,protocol=X6,scope=X7,rtm_type=X8,flags=X9,attributes=X10}}) -> <<(enc_family(X1)):8/unsigned-native,X2:8/unsigned-native,X3:8/unsigned-native,X4:8/unsigned-native,X5:8/unsigned-native,(enc_protocol(X6)):8/unsigned-native,X7:8/unsigned-native,X8:8/unsigned-native,X9:32/unsigned-native,(netlink_codec:encode_tlv_list([enc_rtnetlink_route(X10i) || X10i <- X10]))/binary>>.
