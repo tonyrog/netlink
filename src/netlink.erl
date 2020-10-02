@@ -25,25 +25,25 @@
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
--export([i/0, list/1]).
+-export([i/0, i/1]).
 -export([subscribe/0,subscribe/1,subscribe/2,subscribe/3]).
 -export([unsubscribe/1]).
 -export([invalidate/2]).
 -export([get_root/2, get_match/3, get/4]).
 -export([getiflist/0]).
--export([get_link_attr/1, get_link_attr/2]).
--export([get_addr_attr/1, get_addr_attr/2]).
+-export([getlinkattr/1, getlinkattr/2]).
+-export([getaddrattr/1, getaddrattr/2]).
 
 %% -include("log.hrl").
 -include("netlink.hrl").
 -include("netl_codec.hrl").
 
 -define(error(F, A), io:format((F)++"\n",(A))).
-%%-define(debug(F, A), io:format((F)++"\n",(A))).
+%% -define(debug(F, A), io:format((F)++"\n",(A))).
 -define(debug(F, A), ok).
-%%-define(warning(F, A), io:format((F)++"\n",(A))).
--define(warning(F, A), ok).
-%%-define(info(F, A), io:format((F)++"\n",(A))).
+-define(warning(F, A), io:format((F)++"\n",(A))).
+%% -define(warning(F, A), ok).
+%% -define(info(F, A), io:format((F)++"\n",(A))).
 -define(info(F, A), ok).
 
 -ifdef(OTP_RELEASE). %% this implies 21 or higher
@@ -56,8 +56,10 @@
 
 -define(SERVER, ?MODULE). 
 
+%% Really examples of addr field
 -type if_addr_field() :: address | local | broadcast | anycast | multicast.
 
+%% and examples of link field
 -type if_link_field() :: name | index | mtu | txqlen | flags | 
 			 operstate | qdisc | address | broadcast.
 
@@ -77,6 +79,8 @@
 
 -type if_index() :: non_neg_integer().
 
+-type if_match() :: if_index()|if_name()|if_addr(). %% |"*"
+
 -type match_op_t() :: '==' | '=:=' | '<' | '=<' | '>=' | '/=' | '=/='.
 
 -type attr_name() :: atom() | integer().
@@ -94,19 +98,12 @@
 	 attr     :: attr_t() %% attributes
 	}).
 
--record(addr,
+-record(sub,
 	{
-	 iaddr  :: {if_index(),if_addr()},    %% index and address (unique)
-	 index  :: if_index(),                %% interface index
-	 attr   :: #{ attr_name() => term() } %% attributes
-	}).
-
--record(subscription,
-	{
+	 ref  :: reference(),         %% ref and monitor
 	 pid  :: pid(),               %% subscriber
-	 mon  :: reference(),         %% monitor
 	 name :: string(),            %% name
-	 fields=all :: all | addr | link | [if_field()]
+	 fields=all :: all | addr | link | [if_match()]
 	}).
 
 -define(MIN_RCVBUF,  (128*1024)).
@@ -126,10 +123,9 @@
 -record(state, 
 	{
 	 port,
-	 %% fixme links = #{} :: #{ if_index() => #link{} }
-	 link_list  = [] :: [#link {}],
-	 addr_list  = [] :: [#addr {}],
-	 sub_list   = [] :: [#subscription {}],
+	 names = #{} :: #{ string() => if_index() },
+	 links = #{} :: #{ if_index() => #link{} },
+	 subs = #{} :: #{ reference() => #sub{} },
 	 request         :: undefined | #request{},
 	 request_queue = [] :: [#request{}],
 	 o_seq = 0,
@@ -145,31 +141,59 @@ start() ->
     application:start(netlink).
 
 i() ->
-    gen_server:call(?SERVER, {list,[],false}).
+    i("*").
+
+i(Interface) ->
+    Verbose = false,
+    Ifs = getlinkattr(Interface, index),
+    lists:foreach(
+      fun({index,I}) ->
+	      LinkAttrs = getlinkattr(I),
+	      AddrAttrs = getaddrattr(I),
+	      Addr = [format_addr_attrs(AttrList, Verbose) ||
+			 AttrList <- AddrAttrs],
+	      lists:foreach(
+		fun(Attrs) ->
+			io:format("link {~s~s}\n",
+				  [Addr,format_link_attrs(Attrs, Verbose)])
+		end, LinkAttrs)
+      end, Ifs).
+		 
 
 stop() ->
     gen_server:call(?SERVER, stop).
 
-%% list matching interfaces
--spec list(Match::[match_t()]) -> ok.
-list(Match) ->
-    gen_server:call(?SERVER, {list,Match,false}).
-
-%% return link attributes from interface index or interface name
-get_link_attr(IndexOrName) ->
-    get_link_attr(IndexOrName, all).
-
-get_link_attr(IndexOrName, Fields) ->
-    gen_server:call(?SERVER, {get_link_attr,IndexOrName,Fields}).
-
-get_addr_attr(IndexOrName) ->
-    get_addr_attr(IndexOrName, all).
-
-get_addr_attr(IndexOrName,Fields) ->
-    gen_server:call(?SERVER, {get_addr_attr,IndexOrName,Fields}).
+-spec getiflist() -> {ok,[string()]}.
 
 getiflist() ->
-    gen_server:call(?SERVER, getiflist).
+    {ok,[Name || {ifname,Name} <- getlinkattr("*", ifname)]}.
+
+%% return link attributes from interface index or interface name
+
+-spec getlinkattr(Interface::if_match()) -> [[{attr_name(),term()}]].
+
+getlinkattr(Interface) ->
+    getifattr(Interface, link, all).
+
+-spec getlinkattr(Interface::if_match(), Fields::match_t()) ->
+	  [[{attr_name(),term()}]].
+
+getlinkattr(Interface, Fields) ->
+    getifattr(Interface, link, Fields).
+
+-spec getaddrattr(Interface::if_match()) -> [[{attr_name(),term()}]].
+
+getaddrattr(Interface) ->
+    getifattr(Interface,addr,all).
+
+-spec getaddrattr(Interface::if_match(), Fields::match_t()) ->
+	  [[{attr_name(),term()}]].
+
+getaddrattr(Interface,Fields) ->
+    getifattr(Interface,addr,Fields).
+
+getifattr(Interface,Type,Fields) ->
+    gen_server:call(?SERVER, {getifattr,Type,Interface,Fields}). 
 
 %% @doc
 %%   Subscribe to interface changes, notifications will be
@@ -205,8 +229,14 @@ unsubscribe(Ref) ->
 
 %% clear all attributes for interface Name - to generate new events
 %% should be synced somehow.
-invalidate(Name,Fields) ->
-    gen_server:call(?SERVER, {invalidate,Name,Fields}).
+
+-spec invalidate(Intetface::if_match(), Fields::[attr_name()]) ->
+    ok.
+
+invalidate(Interface,Fields) ->
+    gen_server:call(?SERVER, {invalidate,Interface,Fields}).
+
+
 
 get_root(What,Fam) ->
     get(What,Fam,[root,match,request],[]).
@@ -320,43 +350,48 @@ init_drv(Opts, State) ->
 
 handle_call({subscribe,Pid,Name,Options,Fs}, _From, State) ->
     Mon = erlang:monitor(process, Pid),
-    S = #subscription { pid=Pid, mon=Mon, name=Name, fields=Fs },
-    SList = [S | State#state.sub_list],
+    S = #sub { ref=Mon, pid=Pid, name=Name, fields=Fs },
+    Subs = (State#state.subs)#{ Mon => S },
     case proplists:get_bool(flush, Options) of
 	false ->
-	    {reply, {ok,Mon}, State#state { sub_list = SList }};
+	    {reply, {ok,Mon}, State#state { subs = Subs }};
 	true ->
-	    lists:foreach(
-	      fun(L) ->
+	    maps:fold(
+	      fun(_Index, L, _Ai) ->
 		      As = maps:to_list(L#link.attr),
-		      update_attrs(L#link.name,link,As,#{},[S])
-	      end, State#state.link_list),
-	    lists:foreach(
-	      fun(Y) ->
-		      Name = name_from_index(Y#addr.index,State),
-		      As = maps:to_list(Y#addr.attr),
-		      update_attrs(Name,addr,As,#{},[S])
-	      end, State#state.addr_list),
-	    {reply, {ok,Mon}, State#state { sub_list = SList }}
+		      update_attrs(L#link.name,link,As,#{},[S]),
+		      maps:fold(
+			fun(_Addr, Attr, _Aj) ->
+				As = maps:to_list(Attr),
+				update_attrs(L#link.name,addr,As,#{},[S])
+			end, ok, L#link.addr)
+	      end, ok, State#state.links),
+	    {reply, {ok,Mon}, State#state { subs = Subs }}
     end;
 handle_call({unsubscribe,Ref}, _From, State) ->
-    case lists:keytake(Ref, #subscription.mon, State#state.sub_list) of
-	false ->
+    case maps:take(Ref, State#state.subs) of
+	error ->
 	    {reply,ok,State};
-	{value,_S,SubList} ->
-	    erlang:demonitor(Ref),
-	    {reply,ok,State#state { sub_list=SubList }}
+	{Sub,Subs} ->
+	    erlang:demonitor(Sub#sub.ref, [flush]),
+	    {reply,ok,State#state { subs=Subs }}
     end;
-handle_call({invalidate,Name,Fields},_From,State) ->
-    case lists:keytake(Name, #link.name, State#state.link_list) of 
-	false -> {reply, {error,enoent}, State};
-	{value,L,Ls} ->
-	    Attr = lists:foldl(
-		     fun(F,D) when is_atom(F) ->
-			     maps:remove(F, D)
-		     end, L#link.attr, Fields),
-	    L1 = L#link { attr = Attr },
-	    {reply, ok, State#state { link_list = [L1|Ls] } }
+handle_call({invalidate,Interface,Fields},_From,State) ->
+    case match_interface(Interface, State) of
+	[] ->
+	    {reply, {error, enoent}, State};
+	Ls ->
+	    Links =
+		lists:fold(
+		  fun(L, Links) ->
+			  Attr = lists:foldl(
+				   fun(F,D) when is_atom(F) ->
+					   maps:remove(F, D)
+				   end, L#link.attr, Fields),
+			  L1 = L#link { attr = Attr },
+			  Links#{ L#link.index => L1 }
+		  end, State#state.links, Ls),
+	    {reply, ok, State#state { links = Links }}
     end;
 
 handle_call(Req={get,_What,_Fam,_Flags,_Attrs}, From, State) ->
@@ -366,61 +401,20 @@ handle_call(Req={get,_What,_Fam,_Flags,_Attrs}, From, State) ->
     {noreply, State2};
 
 %% Match?
-handle_call({get_link_attr,Index,Fields},_From,State) when is_integer(Index) ->
-    case lists:keyfind(Index, #link.index, State#state.link_list) of
-	false ->
-	    {reply, {error,enoent}, State};
-	L ->
-	    {reply, {L#link.name,
-		     Index,
-		     get_match(Fields, L#link.attr)}, State}
-    end;
-handle_call({get_link_attr,Name,Fields}, _From, State) when is_list(Name) ->
-    case lists:keyfind(Name, #link.name, State#state.link_list) of
-	false ->
-	    {reply, {error,enoent}, State};
-	L ->
-	    {reply, {L#link.name,
-		     L#link.index,
-		     get_match(Fields, L#link.attr)}, State}
-    end;
-
-handle_call({get_addr_attr,Index,Fields},_From,State) when is_integer(Index) ->
-    {reply, match_addr_attr(Index,Fields,State), State};
-handle_call({get_addr_attr,Name,Fields}, _From, State) when is_list(Name) ->
-    case index_from_name(Name, State) of
-	undefined ->
+handle_call({getifattr,link,Interface,Fields},_From,State) ->
+    case match_interface(Interface, State) of
+	[] ->
 	    {reply, [], State};
-	Index ->
-	    {reply, match_addr_attr(Index,Fields,State), State}
+	Ls ->
+	    {reply, match_link(Ls, Fields), State}
     end;
-
-handle_call({get_addr_attr,Addr,Fields}, _From, State) when is_tuple(Addr) ->
-    As = [A || A <- State#state.addr_list, element(2,A#addr.iaddr) =:= Addr],
-    {reply, [{element(2,A#addr.iaddr),
-	      A#addr.index,get_match(Fields, A#addr.attr)} || 
-		A <- As], State};
-
-handle_call(getiflist, _From, State) ->
-    {reply, {ok, [L#link.name || L <- State#state.link_list]}, State};
-
-handle_call({list,Match,Verbose}, _From, State) ->
-    lists:foreach(
-      fun(L) ->
-	      %% select addresses that belong to link L
-	      Ys = [Y || Y <- State#state.addr_list,
-			 Y#addr.index =:= L#link.index],
-	      FYs = [format_addr(Y,Verbose) || Y <- Ys ],
-	      case match(L#link.attr,#{},Match) of
-		  true ->
-		      io:format("link {~s~s}\n",
-				[FYs,format_link(L,Verbose)]);
-		  false ->
-		      ok
-	      end
-      end, State#state.link_list),
-    {reply, ok, State};
-
+handle_call({getifattr,addr,Interface,Fields},_From,State) ->
+    case match_interface(Interface, State) of
+	[] ->
+	    {reply, [], State};
+	Ls ->
+	    {reply, match_addr(Ls, Fields), State}
+    end;
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 handle_call(_Request, _From, State) ->
@@ -473,13 +467,13 @@ handle_info(_Info={nl_data,Port,Data},State) when Port =:= State#state.port ->
     end;
 
 handle_info({'DOWN',Ref,process,_Pid,_Reason}, State) ->
-    case lists:keytake(Ref, #subscription.mon, State#state.sub_list) of
-	false ->
+    case maps:take(Ref, State#state.subs) of
+	error ->
 	    {noreply,State};
-	{value,_S,SubList} ->
+	{_S,Subs} ->
 	    ?debug("subscription from pid ~p deleted reason=~p",
 		   [_Pid, _Reason]),
-	    {noreply,State#state { sub_list=SubList }}
+	    {noreply,State#state { subs=Subs }}
     end;
 handle_info({timeout,Tmr,request_timeout}, State) ->
     R = State#state.request,
@@ -619,74 +613,95 @@ handle_nlmsg(_RTM=#newlink{family=_Fam,index=Index,flags=Fs,change=Cs,
     ?debug("RTM = ~p", [_RTM]),
     Name = proplists:get_value(ifname, As, ""),
     As1 = [{index,Index},{flags,Fs},{change,Cs}|As],
-    case lists:keytake(Index,#link.index,State#state.link_list) of
-	false ->
-	    Attr = update_attrs(Name,link,As1,#{},State#state.sub_list),
-	    L = #link { index = Index, name = Name, attr = Attr },
-	    Ls = [L|State#state.link_list],
-	    State#state { link_list = Ls };
-	{value,L,Ls} ->
-	    Attr = update_attrs(Name,link,As1,L#link.attr,State#state.sub_list),
-	    L1 = L#link { name = Name, attr = Attr },
-	    State#state { link_list = [L1|Ls] }
+    Links = State#state.links,
+    Names = State#state.names,
+    case maps:take(Index,Links) of
+	error ->
+	    Attr = update_attrs(Name,link,As1,#{},State#state.subs),
+	    Link = #link { index=Index, name=Name, addr = #{}, attr=Attr },
+	    Names1 = Names#{ Name => Index },
+	    State#state { links = Links#{ Index => Link },
+			  names = Names1 };
+	{L,Links1} ->
+	    Attr = update_attrs(Name,link,As1,L#link.attr,State#state.subs),
+	    Link = L#link { name = Name, attr = Attr },
+	    Names1 = Names#{ Name => Index },
+	    State#state { links = Links1#{ Index => Link },
+			  names = Names1 }
     end;
 handle_nlmsg(_RTM=#dellink{family=_Fam,index=Index,flags=_Fs,change=_Cs,
 			  attributes=As}, State) ->
     ?debug("RTM = ~p\n", [_RTM]),
     Name = proplists:get_value(ifname, As, ""),
-    %% does this delete the link?
-    case lists:keytake(Index, #link.index, State#state.link_list) of
-	false ->
+    Links = State#state.links,
+    case maps:take(Index, Links) of
+	error ->
 	    ?warning("Warning link index=~w not found", [Index]),
 	    State;
-	{value,L,Ls} ->
+	{L,Links1} ->
+	    Names = State#state.names,
 	    As1 = maps:to_list(L#link.attr),
-	    update_attrs(Name,link,As1,undefined,State#state.sub_list),
-	    State#state { link_list = Ls }
+	    update_attrs(Name,link,As1,undefined,State#state.subs),
+	    Names1 = map:remove(L#link.name, Names),
+	    State#state { links = Links1, names = Names1 }
     end;
 handle_nlmsg(_RTM=#newaddr { family=Fam, prefixlen=Prefixlen,
-			    flags=Flags, scope=Scope,
-			    index=Index, attributes=As },
+			     flags=Flags, scope=Scope,
+			     index=Index, attributes=As },
 	     State) ->
     ?debug("RTM = ~p", [_RTM]),
     Addr = proplists:get_value(address, As, {}),
     As1 = [{family,Fam},{prefixlen,Prefixlen},{flags,Flags},
 	   {scope,Scope},{index,Index} | As],
     Name = name_from_index(Index, State),
-    if Name =:= undefined ->
-	    ?warning("link index ~p does not exist", [Index]);
-	true ->
-	    ok
-    end,
-    IAddr = {Index,Addr},
-    case lists:keytake(IAddr,#addr.iaddr,State#state.addr_list) of
-	false ->
-	    Attr = update_attrs(Name,addr,As1,#{},State#state.sub_list),
-	    Y = #addr { iaddr=IAddr, index=Index, attr=Attr },
-	    Ys = [Y|State#state.addr_list],
-	    State#state { addr_list = Ys };
-	{value,Y,Ys} ->
-	    Attr = update_attrs(Name,addr,As1,Y#addr.attr,State#state.sub_list),
-	    Y1 = Y#addr { attr=Attr },
-	    State#state { addr_list = [Y1|Ys] }
+    case maps:take(Index, State#state.links) of
+	error ->
+	    ?warning("link ~w ~s does not exist\n", [Index,Name]),
+	    State;
+	{L,Links} ->
+	    Addrs0 = L#link.addr,
+	    Addrs1 = 
+		case maps:take(Addr, Addrs0) of
+		    error ->
+			Attr = update_attrs(Name,addr,As1,#{},
+					    State#state.subs),
+			Addrs0#{ Addr => Attr };
+		    {Attr0,Addrs01} ->
+			Attr1 = update_attrs(Name,addr,As1,Attr0,
+					     State#state.subs),
+			Addrs01#{ Addr => Attr1 }
+		end,
+	    L1 = L#link { addr = Addrs1 },
+	    Links1 = Links#{ Index => L1 },
+	    State#state { links = Links1 }
     end;
 
 handle_nlmsg(_RTM=#deladdr { family=_Fam, index=Index, attributes=As },
 	     State) ->
     ?debug("RTM = ~p", [_RTM]),
     %% FIXME: address should be uniq per Index then key is {Index,Addr}
-    Addr = proplists:get_value(address, As, {}),
-    Name = name_from_index(Index, State),
-    IAddr = {Index,Addr},
-    case lists:keytake(IAddr, #addr.iaddr, State#state.addr_list) of
+    case maps:take(Index, State#state.links) of
 	false ->
-	    ?warning("Warning addr=~p for index=~w not found", 
-		     [Addr,Index]),
+	    ?warning("Warning interface=~w not found", [Index]),
 	    State;
-	{value,Y,Ys} ->
-	    As1 = maps:to_list(Y#addr.attr),
-	    update_attrs(Name,addr,As1,undefined,State#state.sub_list),
-	    State#state { addr_list = Ys }
+	{L,Links} ->
+	    Addr = proplists:get_value(address, As, {}),
+	    Name = name_from_index(Index, State),
+	    Addrs0 = L#link.addr,
+	    Addrs1 = 
+		case maps:take(Addr, Addrs0) of
+		    error ->
+			?warning("Warning addr=~p for index=~w not found", 
+				 [Addr,Index]),
+			Addrs0;
+		    {Attr0,Addrs01} ->
+			As1 = maps:to_list(Attr0),
+			update_attrs(Name,addr,As1,undefined,State#state.subs),
+			Addrs01
+		end,
+	    L1 = L#link { addr = Addrs1 },
+	    Links1 = Links#{ Index => L1 },
+	    State#state { links = Links1 }
     end;
 handle_nlmsg(#done { }, State) ->
     case State#state.request of
@@ -743,128 +758,220 @@ update_attrs(Name,Type,As,Map,Subs) ->
 
 %% Send changes in subscribed fields
 %% FIXME match!?
-send_event(Name,Type,Field,Old,New,[S|SList]) when 
-      S#subscription.name =:= Name; S#subscription.name =:= "*" ->
-    case S#subscription.fields =:= all orelse
-	S#subscription.fields =:= Type orelse 
-	lists:member(Field,S#subscription.fields) orelse
-	lists:member({Type,Field},S#subscription.fields) of
-	true ->
-	    S#subscription.pid ! {netlink,S#subscription.mon,
-				  Name,Field,Old,New},
-	    send_event(Name,Type,Field,Old,New,SList);
-	false ->
-	    send_event(Name,Type,Field,Old,New,SList)
-    end;
-send_event(Name,Type,Field,Old,New,[_|SList]) ->
-    send_event(Name,Type,Field,Old,New,SList);
-send_event(_Name,_Type,_Field,_Old,_New,[]) ->
-    ok.
+send_event(Name,Type,Field,Old,New,Subs) ->
+    maps:fold(
+      fun(_Ref,S,Count) when S#sub.name =:= Name; 
+			     S#sub.name =:= "*" ->
+	      case event_filter(S#sub.fields, Type, Field, New) of
+		  true ->
+		      S#sub.pid ! {netlink,S#sub.ref,Name,Field,Old,New},
+		      Count+1;
+		  false ->
+		      Count
+	      end;
+	 (_Ref,_S,Count) ->
+	      Count
+      end, 0, Subs).
 
-%% Fixme: keep index -> name, name -> index in map?
-index_from_name(Name, State) ->
-    case lists:keyfind(Name, #link.name, State#state.link_list) of
-	false -> undefined;
-	L -> L#link.index
-    end.
+event_filter(all, _, _, _) -> true;
+event_filter(addr, addr, _, _) ->  true;
+event_filter(link, link, _, _) -> true;
+event_filter(Field, _Type, Field, _Value) -> true;
+event_filter({Field,Value}, _Type, Field, Value) -> true;
+event_filter({Op,Field,Value}, _Type, Field, FValue) ->
+    compare(Op, FValue, Value);
+event_filter(_Match, _Type, _Field, _Value) ->
+    false.
+    
+
+match_interface(Index, State) when is_integer(Index) ->
+    case maps:find(Index, State#state.links) of
+	error  -> [];
+	{ok,L} -> [L]
+    end;
+match_interface("*", State) ->
+    maps:fold(fun(_Index,L,Acc) -> [L|Acc] end, [], State#state.links);
+match_interface(Name, State) when is_list(Name) ->
+    case maps:find(Name, State#state.names) of
+	error -> [];
+	{ok,Index} -> match_interface(Index, State)
+    end;
+match_interface(Addr, State) when is_tuple(Addr) ->
+    %% search all interfaces for a matching address (may be more than one)
+    maps:fold(
+      fun(_Index,L,Ai) ->
+	      maps:fold(
+		fun(A, _Attr, Aj) ->
+			if A =:= Addr -> [L|Aj];
+			   true -> Aj
+			end
+		end, Ai, L#link.addr)
+      end, [], State#state.links);
+match_interface(Match, State) ->
+    %% search all interfaces for a match
+    maps:fold(
+      fun(_Index,L,Ai) ->
+	      case filter_match(Match, L#link.attr) of
+		  true -> [L|Ai];
+		  false -> Ai
+	      end
+      end, [], State#state.links).
+
 
 name_from_index(Index, State) ->
-    case lists:keyfind(Index, #link.index, State#state.link_list) of
-	false -> undefined;
-	L -> L#link.name
+    case maps:find(Index, State#state.links) of
+	error -> undefined;
+	{ok,L} -> L#link.name
     end.
 
-match_addr_attr(Index, Fields, State) ->
-    As = [A || A <- State#state.addr_list, A#addr.index =:= Index],
-    [{element(2,A#addr.iaddr),
-      A#addr.index,
-      get_match(Fields, A#addr.attr)} || A <- As].
 
-
-%% FIXME: Use match in subscriptions?	    
-get_match(all, Map) ->
-    maps:to_list(Map);
-get_match(Field, Map) when is_atom(Field) ->
-    case maps:find(Field,Map) of
-	error -> undefined;
-	{ok,Value} -> Value
+match_link([L|Ls], Fields) ->
+    case match(Fields, L#link.attr) of
+	[] -> match_link(Ls, Fields);
+	As -> [As | match_link(Ls, Fields)]
     end;
-get_match(Match, Map) when is_list(Match) ->
-    get_match_(Match, Map, []);
-get_match(_, _Map) ->
+match_link([], _Fields) ->
     [].
 
+match_addr([L|Ls], Fields) ->
+    Ms = maps:fold(
+	   fun(_Addr,Attr,Acc) ->
+		   case match(Fields, Attr) of
+		       [] -> Acc;
+		       As -> [As|Acc]
+		   end
+	   end, [], L#link.addr),
+    Ms ++ match_addr(Ls, Fields);
+match_addr([], _Fields) ->
+    [].
+    
 
-get_match_([Field|Match], Map, Acc) when is_atom(Field) ->
-    case maps:find(Field,Map) of
-	error -> get_match_(Match, Map, Acc);
-	{ok,Value} -> get_match_(Match, Map, [{Field,Value}|Acc])
-    end;
-get_match_([{Op,Field,Value}|Match], Map, Acc) when is_atom(Field) ->
-    case maps:find(Field,Map) of
-	error -> get_match_(Match, Map, Acc);
-	{ok,FValue} ->
-	    case compare(Op,FValue,Value) of
-		true ->
-		    get_match_(Match, Map, [{Field,FValue}|Acc]);
-		false ->
-		    get_match_(Match, Map, Acc)
-	    end
-    end;
-get_match_([_ | Match], Map, Acc) ->
-    get_match_(Match, Map, Acc);
-get_match_([], _Map, Acc) ->
-    Acc.
-
-
-
-match(Y,L,[{Field,Value}|Match]) when is_atom(Field) ->
-    case find2(Field,Y,L) of
-	{ok,Value} -> match(Y,L,Match);
-	_ -> false
-    end;
-match(Y,L,[{Op,Field,Value}|Match]) when is_atom(Op),is_atom(Field) ->
-    case find2(Field,Y,L) of
-	{ok,FValue} ->
-	    case compare(Op,FValue,Value) of
-		true -> match(Y,L,Match);
-		false -> false
-	    end;
-	error ->
-	    false
-    end;
-match(_Y, _L, []) ->
-    true.
-
-find2(Key,D1,D2) ->
-    case maps:find(Key,D1) of
-	error -> maps:find(Key,D2);
-	Res -> Res
+%% Run Match spec over Map and collect all matches
+match(all, Map) ->
+    maps:to_list(Map);
+match(Ms, Map) when is_list(Ms) ->
+    match_(Ms, Map, []);
+match(M, Map) ->
+    case match1(M, Map) of
+	error -> undefined;
+	Match1 -> Match1
     end.
 
-format_link(L,Verbose) ->
-    maps:fold(
-      fun(af_spec,_V,A) -> A;
-	 (map,_V,A) -> A;
-	 (stats,_V,A) -> A;
-	 (stats64,_V,A) -> A;
-	 (change,_V,A) -> A;
-	 (K,V,A) when is_atom(K); Verbose ->
-	      V1 = if K =:= linkinfo -> filter_kv(V, Verbose);
+match_([M|Ms], Map, Acc) ->
+    case match1(M, Map) of
+	false -> match_(Ms, Map, Acc);
+	Match1 -> match_(Ms, Map, [Match1|Acc])
+    end;
+match_([], _Map, Acc) ->
+    Acc.
+
+%% Check if any condition is true in match
+
+filter_match(Ms, Map) when is_list(Ms) ->
+    any_match(Ms, Map);
+filter_match({any,Ms}, Map) ->
+    any_match(Ms, Map);
+filter_match({all,Ms}, Map) ->
+    all_match(Ms, Map);
+filter_match(M, Map) ->
+    case match1(M, Map) of
+	false -> false;
+	_Match1 -> true
+    end.
+
+any_match([M|Ms], Map) ->
+    case M of 
+	{any,Ms1} ->
+	    case any_match(Ms1, Map) of
+		true -> true;
+		false -> any_match(Ms,Map)
+	    end;
+	{all,Ms1} ->
+	    case all_match(Ms1, Map) of
+		true -> true;
+		false -> any_match(Ms,Map)
+	    end;
+	_ ->
+	    case match1(M, Map) of
+		false -> any_match(Ms,Map);
+		_Match1 -> true
+	    end
+    end;
+any_match([], _Map) ->
+    false.
+
+all_match([M|Ms], Map) ->
+    case M of 
+	{any,Ms1} ->
+	    case any_match(Ms1, Map) of
+		false -> false;
+		true -> all_match(Ms,Map)
+	    end;
+	{all,Ms1} ->
+	    case all_match(Ms1,Map) of
+		false -> false;
+		true -> all_match(Ms,Map)
+	    end;
+	_ ->
+	    case match1(M, Map) of
+		false -> false;
+		_Match1 -> all_match(Ms,Map)
+	    end
+    end;
+all_match([], _Map) ->
+    true.
+
+
+%% match one match expression
+match1({Op,Field,Value}, Map)
+  when (is_atom(Op) andalso (is_atom(Field) orelse is_integer(Field))) ->
+    case maps:find(Field, Map) of
+	error -> false;
+	{ok,FValue} ->
+	    case compare(Op,FValue,Value) of
+		true -> {Field,FValue};
+		false -> false
+	    end
+    end;
+match1({Field,Value}, Map) %% same as {'==',Field,Value}
+  when (is_atom(Field) orelse is_integer(Field)) ->
+    case maps:find(Field, Map) of
+	{ok,Value} ->  {Field,Value};
+	_ -> false
+    end;
+match1(Field,Map) when is_atom(Field); is_integer(Field) ->
+    case maps:find(Field, Map) of
+	error -> false;
+	{ok,Value} -> {Field,Value}
+    end;
+match1(_Match,_Map) ->
+    ?warning("unknown match condition ~p\n", [_Match]),    
+    false.
+
+format_link_attrs(AttrList,Verbose) ->
+    lists:foldl(
+      fun({af_spec,_V},A) -> A;
+	 ({map,_V},A) -> A;
+	 ({stats,_V},A) -> A;
+	 ({stats64,_V},A) -> A;
+	 ({change,_V},A) -> A;
+	 ({K,V},A) when is_atom(K); Verbose ->
+	      V1 = if K =:= linkinfo -> 
+			   filter_kv(V, Verbose);
 		      true -> V
 		   end,
 	      [["\n    ",name_to_list(K), " ",value_to_list(K,V1),";"]|A];
-	 (_K,_V,A) -> A
-      end, [], L#link.attr).
+	 ({_K,_V},A) -> A
+      end, [], AttrList).
 
-format_addr(Y,Verbose) ->
+format_addr_attrs(AttrList,Verbose) ->
     ["\n", "    addr {",
-     maps:fold(
-       fun(cacheinfo,_V,A) -> A;
-	  (K,V,A) when is_atom(K); Verbose ->
+     lists:foldl(
+       fun({cacheinfo,_V},A) -> A;
+	  ({K,V},A) when is_atom(K); Verbose ->
 	       [[" ",name_to_list(K), " ",value_to_list(K,V),";"]|A];
-	  (_K,_V,A) -> A
-       end, [], Y#addr.attr), "}"].
+	  ({_K,_V},A) -> A
+       end, [], AttrList), "}"].
 
 filter_kv(List, _Verbose=true) -> List;
 filter_kv(List, _Verbose=false) ->
@@ -893,6 +1000,7 @@ format_a(A) when is_tuple(A), tuple_size(A) =:= 4 ->
 format_a(A) when is_tuple(A), tuple_size(A) =:= 8 ->
     inet_parse:ntoa(A).
 
+%% add expressions ?
 compare('==',A,B) -> A == B;
 compare('=:=',A,B) -> A =:= B;
 compare('<' ,A,B) -> A < B;
